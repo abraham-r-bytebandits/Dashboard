@@ -11,7 +11,6 @@ import DashboardTable from '@/components/table/DashboardTable';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { DatePickerWithRange } from '@/components/DatePickerWithRange';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { ClockFading } from "lucide-react"
 
 const SalesDashboard = () => {
