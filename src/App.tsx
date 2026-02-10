@@ -7,7 +7,7 @@ import SalesDashboard from './screens/SalesDashboard';
 function App() {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gray-50">
+      <div className="flex min-h-screen w-full bg-[#F1F5F9]">
         <AppSidebar />
 
         <main className="flex-1">
