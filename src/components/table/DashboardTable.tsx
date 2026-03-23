@@ -10,52 +10,11 @@ const DashboardTable = () => {
 
     return (
         <Card
-            title={
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={() => setActiveTab('pending')}
-                        className={`text-base font-semibold pb-1 border-b-2 transition-colors ${activeTab === 'pending'
-                            ? 'border-blue-600 text-gray-900'
-                            : 'border-transparent text-gray-400 hover:text-gray-600'
-                            }`}
-                    >
-                        Pending Invoices
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('recent')}
-                        className={`text-base font-semibold pb-1 border-b-2 transition-colors ${activeTab === 'recent'
-                            ? 'border-blue-600 text-gray-900'
-                            : 'border-transparent text-gray-400 hover:text-gray-600'
-                            }`}
-                    >
-                        Recent Transactions
-                    </button>
-                </div>
-            }
-            extra={
-                <a
-                    href="#"
-                    style={{
-                        display: 'inline-flex',
-                        width: 153,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        borderRadius: 6,
-                        padding: '8px 0',
-                        fontSize: 14,
-                        color: '#7db4ebff',
-                        backgroundColor: '#ecf3faff',
-                        border: '1px solid #7db4ebff',
-                        textDecoration: 'none',
-                    }}
-                >
-                    <FileTextOutlined />
-                    Generate Report
-                </a>
-            }
             className='w-full h-full flex flex-col'
             styles={{
+                header: {
+                    padding: 0,
+                },
                 body: {
                     padding: 0,
                     flex: 1,
@@ -63,6 +22,51 @@ const DashboardTable = () => {
                     flexDirection: 'column',
                 }
             }}
+            title={
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-2 sm:px-6">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`text-sm sm:text-base font-semibold pb-1 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pending'
+                                ? 'border-blue-600 text-gray-900'
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                }`}
+                        >
+                            Pending Invoices
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('recent')}
+                            className={`text-sm sm:text-base font-semibold pb-1 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'recent'
+                                ? 'border-blue-600 text-gray-900'
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                }`}
+                        >
+                            Recent Transactions
+                        </button>
+                    </div>
+                    <a
+                        href="#"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            borderRadius: 6,
+                            padding: '8px 16px',
+                            fontSize: 14,
+                            color: '#7db4ebff',
+                            backgroundColor: '#ecf3faff',
+                            border: '1px solid #7db4ebff',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                            alignSelf: 'flex-start',
+                        }}
+                    >
+                        <FileTextOutlined />
+                        Generate Report
+                    </a>
+                </div>
+            }
         >
             <div className='flex-1 overflow-x-auto'>
                 <Table<Invoice>
@@ -78,8 +82,7 @@ const DashboardTable = () => {
                 />
             </div>
 
-            {/* Footer Section */}
-            <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 border-t border-gray-100'>
+            <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 border-t border-gray-100'>
                 <div className='text-sm text-gray-600'>
                     Showing <span className='font-semibold text-gray-900'>5</span> of{' '}
                     <span className='font-semibold text-gray-900'>25</span> results
@@ -91,6 +94,7 @@ const DashboardTable = () => {
                         total={10}
                         className='flex justify-end'
                         align="end"
+                        size="small"
                     />
                 </div>
             </div>

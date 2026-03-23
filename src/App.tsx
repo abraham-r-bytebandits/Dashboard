@@ -9,7 +9,7 @@ function App() {
       <div className="flex min-h-screen w-full bg-[#F1F5F9]">
         <AppSidebar />
 
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <FinancialDashboard />
         </main>
       </div>
