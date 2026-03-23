@@ -1,20 +1,58 @@
 'use client';
-import { Card, Table, Button, Pagination } from 'antd';
-import type { Order } from './columns.tsx';
+import { useState } from 'react';
+import { Card, Table, Pagination } from 'antd';
+import type { Invoice } from './columns.tsx';
 import { columns, data } from './columns.tsx';
 import { FileTextOutlined } from '@ant-design/icons';
 
 const DashboardTable = () => {
+    const [activeTab, setActiveTab] = useState<'pending' | 'recent'>('pending');
+
     return (
         <Card
-            title="Recent Orders"
+            title={
+                <div className="flex items-center gap-6">
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`text-base font-semibold pb-1 border-b-2 transition-colors ${activeTab === 'pending'
+                            ? 'border-blue-600 text-gray-900'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                            }`}
+                    >
+                        Pending Invoices
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('recent')}
+                        className={`text-base font-semibold pb-1 border-b-2 transition-colors ${activeTab === 'recent'
+                            ? 'border-blue-600 text-gray-900'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                            }`}
+                    >
+                        Recent Transactions
+                    </button>
+                </div>
+            }
             extra={
-                <Button
-                    className='text-[#2BD0EA] bg-[#E8FAFD] border-none hover:text-blue-700 hover:bg-[#D0F5FA] flex items-center gap-2'
-                    icon={<FileTextOutlined />}
+                <a
+                    href="#"
+                    style={{
+                        display: 'inline-flex',
+                        width: 153,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        borderRadius: 6,
+                        padding: '8px 0',
+                        fontSize: 14,
+                        color: '#7db4ebff',
+                        backgroundColor: '#ecf3faff',
+                        border: '1px solid #7db4ebff',
+                        textDecoration: 'none',
+                    }}
                 >
+                    <FileTextOutlined />
                     Generate Report
-                </Button>
+                </a>
             }
             className='w-full h-full flex flex-col'
             styles={{
@@ -27,7 +65,7 @@ const DashboardTable = () => {
             }}
         >
             <div className='flex-1 overflow-x-auto'>
-                <Table<Order>
+                <Table<Invoice>
                     columns={columns}
                     dataSource={data}
                     pagination={false}
@@ -40,7 +78,7 @@ const DashboardTable = () => {
                 />
             </div>
 
-            {/* Footer Section - Improved */}
+            {/* Footer Section */}
             <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 border-t border-gray-100'>
                 <div className='text-sm text-gray-600'>
                     Showing <span className='font-semibold text-gray-900'>5</span> of{' '}

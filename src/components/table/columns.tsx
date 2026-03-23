@@ -1,135 +1,167 @@
-import { Tag, Avatar, Space } from "antd";
+import { Tag, Avatar, Space, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
-export interface Order {
+export interface Invoice {
     key: string;
-    orderId: string;
-    customer: {
+    invoiceId: string;
+    client: {
         name: string;
         avatar: string;
     };
-    product: string;
-    amount: number;
-    vendor: string;
-    status: "Paid" | "Pending" | "Unpaid";
-    rating: {
-        value: number;
-        votes: number;
-    };
+    featureProject: string;
+    status: "Pending" | "Paid" | "Overdue";
+    amount: string;
+    received: string;
+    dueDate: string;
+    overdueBy: string;
 }
 
-
-export const data: Order[] = [
+export const data: Invoice[] = [
     {
         key: "1",
-        orderId: "#VZ2112",
-        customer: {
-            name: "Alex Smith",
-            avatar: "https://i.pravatar.cc/40?img=1",
-        },
-        product: "Clothes",
-        amount: 109,
-        vendor: "Zoetic Fashion",
-        status: "Paid",
-        rating: { value: 5.0, votes: 61 },
+        invoiceId: "#VZ2112",
+        client: { name: "Alex Smith", avatar: "https://i.pravatar.cc/40?img=1" },
+        featureProject: "Ecommerce website with new features for thillai wedding silks",
+        status: "Pending",
+        amount: "₹10,583",
+        received: "₹10,583",
+        dueDate: "March 24",
+        overdueBy: "2 days",
     },
     {
         key: "2",
-        orderId: "#VZ2111",
-        customer: {
-            name: "Jansh Brown",
-            avatar: "https://i.pravatar.cc/40?img=2",
-        },
-        product: "Kitchen Storage",
-        amount: 149,
-        vendor: "Micro Design",
+        invoiceId: "#VZ2112",
+        client: { name: "Alex Smith", avatar: "https://i.pravatar.cc/40?img=2" },
+        featureProject: "Ecommerce website with new features for thillai wedding silks",
         status: "Pending",
-        rating: { value: 4.5, votes: 61 },
+        amount: "₹10,583",
+        received: "₹10,583",
+        dueDate: "March 23",
+        overdueBy: "2 days",
     },
     {
         key: "3",
-        orderId: "#VZ2109",
-        customer: {
-            name: "Ayaan Bowen",
-            avatar: "https://i.pravatar.cc/40?img=3",
-        },
-        product: "Bike Accessories",
-        amount: 215,
-        vendor: "Nesta Technologies",
-        status: "Paid",
-        rating: { value: 4.9, votes: 89 },
+        invoiceId: "#VZ2112",
+        client: { name: "Alex Smith", avatar: "https://i.pravatar.cc/40?img=3" },
+        featureProject: "Ecommerce website with new features for thillai wedding silks",
+        status: "Pending",
+        amount: "₹10,583",
+        received: "₹10,583",
+        dueDate: "March 23",
+        overdueBy: "2 days",
     },
     {
         key: "4",
-        orderId: "#VZ2108",
-        customer: {
-            name: "Prezy Mark",
-            avatar: "https://i.pravatar.cc/40?img=4",
-        },
-        product: "Furniture",
-        amount: 199,
-        vendor: "Syntyce Solutions",
-        status: "Unpaid",
-        rating: { value: 4.3, votes: 47 },
+        invoiceId: "#VZ2112",
+        client: { name: "Alex Smith", avatar: "https://i.pravatar.cc/40?img=4" },
+        featureProject: "Ecommerce website with new features for thillai wedding silks",
+        status: "Pending",
+        amount: "₹10,583",
+        received: "₹10,583",
+        dueDate: "March 23",
+        overdueBy: "2 days",
     },
     {
         key: "5",
-        orderId: "#VZ2107",
-        customer: {
-            name: "Vihan Hudda",
-            avatar: "https://i.pravatar.cc/40?img=5",
-        },
-        product: "Bags and Wallets",
-        amount: 330,
-        vendor: "iTest Factory",
-        status: "Paid",
-        rating: { value: 4.7, votes: 161 },
+        invoiceId: "#VZ2112",
+        client: { name: "Alex Smith", avatar: "https://i.pravatar.cc/40?img=5" },
+        featureProject: "Ecommerce website with new features for thillai wedding silks",
+        status: "Pending",
+        amount: "₹10,583",
+        received: "₹10,583",
+        dueDate: "March 23",
+        overdueBy: "2 days",
     },
 ];
 
-
-
-export const columns: ColumnsType<Order> = [
+export const columns: ColumnsType<Invoice> = [
     {
-        title: "Order ID",
-        dataIndex: "orderId",
-        key: "orderId",
-        render: (id) => <a style={{ color: "#1677ff" }}>{id}</a>,
+        title: "Invoice ID",
+        dataIndex: "invoiceId",
+        key: "invoiceId",
+        render: (id) => <a style={{ color: "#465189", fontWeight: 600 }}>{id}</a>,
     },
     {
-        title: "Customer",
-        dataIndex: "customer",
-        key: "customer",
-        render: (customer) => (
+        title: "Client Name",
+        dataIndex: "client",
+        key: "client",
+        render: (client) => (
             <Space>
-                <Avatar src={customer.avatar} />
-                <span>{customer.name}</span>
+                <Avatar src={client.avatar} />
+                <span>{client.name}</span>
             </Space>
         ),
     },
     {
-        title: "Product",
-        dataIndex: "product",
-        key: "product",
+        title: "Feature / Project",
+        dataIndex: "featureProject",
+        key: "featureProject",
+        ellipsis: true,
+        width: 280,
     },
     {
         title: "Status",
         dataIndex: "status",
         key: "status",
-        render: (status: Order["status"]) => {
-            const color =
-                status === "Paid" ? "green" : status === "Pending" ? "orange" : "red";
-            return <Tag color={color}>{status}</Tag>;
+        render: (status: Invoice["status"]) => {
+            return (
+                <Tag
+                    style={{
+                        color: "#FF0000",
+                        backgroundColor: "#F4DADA",
+                        border: "none",
+                        borderRadius: 6,
+                        fontWeight: 500,
+                    }}
+                >
+                    {status}
+                </Tag>
+            );
         },
     },
     {
         title: "Amount",
         dataIndex: "amount",
         key: "amount",
-        render: (amount: number) => (
-            <span style={{ color: "#CBF395", fontWeight: 500 }}>
-                ${amount.toFixed(2)}
-            </span>
+        render: (amount: string) => (
+            <span style={{ color: "#2B8879", fontWeight: 500 }}>{amount}</span>
+        ),
+    },
+    {
+        title: "Received",
+        dataIndex: "received",
+        key: "received",
+        render: (received: string) => (
+            <span style={{ color: "#2B8879", fontWeight: 500 }}>{received}</span>
+        ),
+    },
+    {
+        title: "Due Date",
+        dataIndex: "dueDate",
+        key: "dueDate",
+    },
+    {
+        title: "Overdue by",
+        dataIndex: "overdueBy",
+        key: "overdueBy",
+        render: (text: string) => (
+            <span style={{ color: "#ef4444", fontWeight: 500 }}>{text}</span>
+        ),
+    },
+    {
+        title: "Action",
+        key: "action",
+        render: () => (
+            <Button
+                size="small"
+                style={{
+                    border: "1px solid black",
+                    fontSize: 12,
+                    padding: "2px 16px",
+                }}
+            >
+                Paid
+            </Button>
         ),
     },
 ];
