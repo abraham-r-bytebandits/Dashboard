@@ -39,6 +39,7 @@ interface AuthContextType {
   setShowModal: (show: boolean) => void;
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   onAuthSuccess: (accessToken: string, refreshToken: string, remember: boolean) => Promise<void>;
 }
 
@@ -69,8 +70,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (actualUser.role) roles.push(actualUser.role);
 
     return roles.some((r: any) => {
-      if (typeof r === 'string') return r.toUpperCase() === 'ADMIN';
-      if (typeof r === 'object' && r.name) return r.name.toUpperCase() === 'ADMIN';
+      if (typeof r === 'string') return r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'SUPER_ADMIN';
+      if (typeof r === 'object' && r.name) return r.name.toUpperCase() === 'ADMIN' || r.name.toUpperCase() === 'SUPER_ADMIN';
+      return false;
+    });
+  })();
+
+  const isSuperAdmin = (() => {
+    if (!user) return false;
+    const actualUser = user.data ? user.data : user;
+    const roles = Array.isArray(actualUser.roles) ? actualUser.roles : actualUser.roles ? [actualUser.roles] : [];
+    if (actualUser.role) roles.push(actualUser.role);
+
+    return roles.some((r: any) => {
+      if (typeof r === 'string') return r.toUpperCase() === 'SUPER_ADMIN';
+      if (typeof r === 'object' && r.name) return r.name.toUpperCase() === 'SUPER_ADMIN';
       return false;
     });
   })();
@@ -160,6 +174,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setShowModal,
     loading,
     isAdmin,
+    isSuperAdmin,
     onAuthSuccess,
   };
 

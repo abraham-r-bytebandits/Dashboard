@@ -7,7 +7,7 @@ import api from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 
 const DashboardTable = () => {
-    const { isAdmin } = useAuth();
+    const { isAdmin, isSuperAdmin } = useAuth();
 
     const [activeTab, setActiveTab] = useState<'fixed' | 'operational'>('fixed');
     const [data, setData] = useState<any[]>([]);
@@ -107,7 +107,7 @@ const DashboardTable = () => {
         >
             <div className='flex-1 overflow-x-auto'>
                 <Table<any>
-                    columns={getColumns(isAdmin, () => fetchData(activeTab, page))}
+                    columns={getColumns(isAdmin, isSuperAdmin, () => fetchData(activeTab, page), () => fetchData(activeTab, page))}
                     dataSource={data}
                     pagination={false}
                     loading={loading}

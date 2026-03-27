@@ -6,6 +6,9 @@ import {
   Settings,
   TrendingUp,
   BarChart,
+  ShieldCheck,
+  Briefcase,
+  FileText,
 } from "lucide-react"
 
 export const data = {
@@ -39,9 +42,22 @@ export const data = {
       isActive: true,
     },
     {
+      title: "Admin Tools",
+      url: "#",
+      icon: ShieldCheck,
+      isSuperAdminOnly: true,
+      items: [
+        {
+          title: "User Management",
+          url: "/admin/users",
+        },
+      ],
+    },
+    {
       title: "Fixed Costs",
       url: "#",
       icon: ShoppingCart,
+      isAdminOnly: true,
       items: [
         {
           title: "Add Fixed Cost",
@@ -57,6 +73,7 @@ export const data = {
       title: "Operational Costs",
       url: "#",
       icon: Users,
+      isAdminOnly: true,
       items: [
         {
           title: "Add Operational Cost",
@@ -67,6 +84,16 @@ export const data = {
           url: "#",
         },
       ],
+    },
+    {
+      title: "Clients",
+      url: "/clients",
+      icon: Briefcase,
+    },
+    {
+      title: "Invoices",
+      url: "/invoices",
+      icon: FileText,
     },
     {
       title: "Settings",

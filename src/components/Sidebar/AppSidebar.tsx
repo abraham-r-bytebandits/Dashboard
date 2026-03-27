@@ -24,7 +24,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { isAdmin, user } = useAuth();
+    const { isAdmin, isSuperAdmin, user } = useAuth();
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -51,8 +51,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {/* Main Navigation */}
                 <SidebarGroup>
                     <SidebarMenu className="gap-3">
-                        {data.navMain.map((item) => {
-                            if (!isAdmin && (item.title === "Fixed Costs" || item.title === "Operational Costs")) {
+                        {data.navMain.map((item: any) => {
+                            if (item.isSuperAdminOnly && !isSuperAdmin) {
+                                return null;
+                            }
+                            if (item.isAdminOnly && !isAdmin) {
                                 return null;
                             }
                             return item.items?.length ? (
@@ -72,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                         </CollapsibleTrigger>
                                         <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down gap-3">
                                             <SidebarMenuSub className="gap-3">
-                                                {item.items.map((subItem) => (
+                                                {item.items.map((subItem: any) => (
                                                     <SidebarMenuSubItem key={subItem.title}>
                                                         <SidebarMenuSubButton asChild isActive={currentRoute === subItem.url}>
                                                             <a href={subItem.url} onClick={(e) => handleNavigation(e, subItem.url)}>

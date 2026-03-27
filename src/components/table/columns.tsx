@@ -1,4 +1,4 @@
-import { Tag, Avatar, Space, Button, message } from "antd";
+import { Tag, Avatar, Space, Button, message, Popconfirm } from "antd";
 import { useState } from "react";
 import api from "@/api/axios";
 import type { ColumnsType } from "antd/es/table";
@@ -21,7 +21,9 @@ export interface Expense {
 
 export const getColumns = (
     isAdmin: boolean = false,
-    onPaySuccess?: () => void
+    isSuperAdmin: boolean = false,
+    onPaySuccess?: () => void,
+    onDeleteSuccess?: () => void
 ): ColumnsType<Expense> => {
     const baseColumns: ColumnsType<Expense> = [
         {
@@ -129,7 +131,7 @@ export const getColumns = (
             },
         }];
 
-    if (isAdmin) {
+    if (isAdmin || isSuperAdmin) {
         baseColumns.push({
             title: "Action",
             key: "action",
@@ -171,8 +173,35 @@ export const getColumns = (
                         </Button>
                     );
                 };
+                
+                const DeleteButton = () => {
+                    const [delLoading, setDelLoading] = useState(false);
+                    const handleDelete = async () => {
+                        if (!record.publicId) return;
+                        setDelLoading(true);
+                        try {
+                            await api.delete(`/expenses/${record.publicId}`);
+                            message.success("Expense deleted successfully!");
+                            onDeleteSuccess?.();
+                        } catch (err: any) {
+                            message.error(err?.response?.data?.message || "Failed to delete expense");
+                        } finally {
+                            setDelLoading(false);
+                        }
+                    };
+                    return (
+                        <Popconfirm title="Delete expense" onConfirm={handleDelete} okText="Yes" cancelText="No">
+                            <Button danger type="text" size="small" loading={delLoading}>Delete</Button>
+                        </Popconfirm>
+                    );
+                };
 
-                return <PayButton />;
+                return (
+                    <Space>
+                        {(isAdmin || isSuperAdmin) && <PayButton />}
+                        {isSuperAdmin && <DeleteButton />}
+                    </Space>
+                );
             },
         });
     }

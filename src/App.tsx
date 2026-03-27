@@ -6,13 +6,20 @@ import AddExpense from './screens/AddExpense';
 import AuthModal from './components/login/AuthModal';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import UserManagement from './screens/admin/UserManagement';
+import ClientsList from './screens/clients/ClientsList';
+import InvoicesList from './screens/invoices/InvoicesList';
 
 function MainArea() {
   return (
     <Routes>
-      <Route path="/" element={<FinancialDashboard />} />
-      <Route path="/add-fixed-cost" element={<AddExpense type="fixed" />} />
-      <Route path="/add-operational-cost" element={<AddExpense type="operational" />} />
+      <Route path="/" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><FinancialDashboard /></ProtectedRoute>} />
+      <Route path="/add-fixed-cost" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AddExpense type="fixed" /></ProtectedRoute>} />
+      <Route path="/add-operational-cost" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AddExpense type="operational" /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><UserManagement /></ProtectedRoute>} />
+      <Route path="/clients" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ClientsList /></ProtectedRoute>} />
+      <Route path="/invoices" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><InvoicesList /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
