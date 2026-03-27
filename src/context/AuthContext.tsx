@@ -33,7 +33,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string, remember: boolean) => Promise<void>;
+  login: (identifier: string, password: string, remember: boolean) => Promise<void>;
   logout: () => Promise<void>;
   showModal: boolean;
   setShowModal: (show: boolean) => void;
@@ -132,15 +132,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const login = async (
-    email: string,
+    identifier: string,
     password: string,
     remember: boolean
   ): Promise<void> => {
-    const res = await api.post<LoginResponse>("/auth/login", {
-      email,
-      password,
-      remember,
-    });
+    // Heuristic: if input is mostly digits, treat as phone number, otherwise treat as email
+    const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier) && identifier.replace(/\D/g, '').length >= 7;
+    const payload = isPhone 
+      ? { phone: identifier, password, remember }
+      : { email: identifier, password, remember };
+
+    const res = await api.post<LoginResponse>("/auth/login", payload);
 
     const { accessToken, refreshToken } = res.data;
     await onAuthSuccess(accessToken, refreshToken, remember);

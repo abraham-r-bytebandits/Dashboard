@@ -7,8 +7,8 @@ import GoogleLoginButton from "./GoogleLoginButton"
 import { useState } from "react"
 
 interface LoginFormProps {
-    email: string
-    setEmail: (val: string) => void
+    identifier: string
+    setIdentifier: (val: string) => void
     password: string
     setPassword: (val: string) => void
     remember: boolean
@@ -17,8 +17,8 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({
-    email,
-    setEmail,
+    identifier,
+    setIdentifier,
     password,
     setPassword,
     remember,
@@ -47,13 +47,13 @@ export default function LoginForm({
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="loginEmail">Email Address</Label>
+                        <Label htmlFor="loginIdentifier">Email or Phone Number</Label>
                         <Input
-                            id="loginEmail"
-                            type="email"
-                            placeholder="email@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            id="loginIdentifier"
+                            type="text"
+                            placeholder="email@example.com or +1234567890"
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
                             className="h-10"
                             required
                         />
