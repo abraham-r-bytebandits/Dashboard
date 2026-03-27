@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Caches and Build
+.eslintcache
+.stylelintcache
+coverage/
+build/
