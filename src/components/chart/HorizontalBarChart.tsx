@@ -26,7 +26,7 @@ export function ChartBarHorizontal({ data }: { data: ContributionData[] }) {
                 <CardTitle className="text-sm font-medium">Capital & Contributions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-                {data.slice(0, 2).map((item, index) => {
+                {(data || []).slice(0, 2).map((item, index) => {
                     const label = item.contributorName || item.label || `Contributor ${index + 1}`;
                     const rawAmount = item.amount ?? item.totalAmount;
                     const amountStr = typeof rawAmount === 'number' ? `₹${rawAmount.toLocaleString()}` : rawAmount;
@@ -43,7 +43,7 @@ export function ChartBarHorizontal({ data }: { data: ContributionData[] }) {
                     };
 
                     const numericAmount = parseNumber(rawAmount);
-                    const totalAmount = data.reduce((sum, d) => sum + parseNumber(d.amount ?? d.totalAmount), 0);
+                    const totalAmount = (data || []).reduce((sum, d) => sum + parseNumber(d.amount ?? d.totalAmount), 0);
                     const calculatedPercent = totalAmount > 0 ? (numericAmount / totalAmount) * 100 : 0;
 
                     let percent = item.percent ?? (item as any).percentage;

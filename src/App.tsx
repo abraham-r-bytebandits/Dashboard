@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UserManagement from './screens/admin/UserManagement';
 import ClientsList from './screens/clients/ClientsList';
 import InvoicesList from './screens/invoices/InvoicesList';
+import ImageConverter from './screens/ImageConverter';
 
 function MainArea() {
   return (
@@ -20,6 +21,7 @@ function MainArea() {
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><UserManagement /></ProtectedRoute>} />
       <Route path="/clients" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ClientsList /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><InvoicesList /></ProtectedRoute>} />
+      <Route path="/image-converter" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ImageConverter /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

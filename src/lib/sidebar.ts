@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Briefcase,
   FileText,
+  Image,
 } from "lucide-react"
 
 export const data = {
@@ -84,6 +85,11 @@ export const data = {
           url: "#",
         },
       ],
+    },
+    {
+      title: "Image Converter",
+      url: "/image-converter",
+      icon: Image,
     },
     {
       title: "Clients",
