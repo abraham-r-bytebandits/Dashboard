@@ -3,12 +3,7 @@ import {
   Home,
   ShoppingCart,
   Users,
-  Package,
-  DollarSign,
   Settings,
-  Tag,
-  FileText,
-  HelpCircle,
   TrendingUp,
   BarChart,
 } from "lucide-react"
@@ -38,101 +33,37 @@ export const data = {
   ],
   navMain: [
     {
-      title: "Overview",
-      url: "#",
+      title: "Dashboard",
+      url: "/",
       icon: Home,
       isActive: true,
-      items: [
-        {
-          title: "Dashboard",
-          url: "#",
-        },
-        {
-          title: "Analytics",
-          url: "#",
-        },
-        {
-          title: "Reports",
-          url: "#",
-        },
-      ],
     },
     {
-      title: "Orders",
+      title: "Fixed Costs",
       url: "#",
       icon: ShoppingCart,
       items: [
         {
-          title: "All Orders",
-          url: "#",
+          title: "Add Fixed Cost",
+          url: "/add-fixed-cost",
         },
         {
-          title: "Pending",
-          url: "#",
-        },
-        {
-          title: "Completed",
-          url: "#",
-        },
-        {
-          title: "Refunded",
+          title: "Edit Fixed Cost",
           url: "#",
         },
       ],
     },
     {
-      title: "Customers",
+      title: "Operational Costs",
       url: "#",
       icon: Users,
       items: [
         {
-          title: "Customer List",
-          url: "#",
+          title: "Add Operational Cost",
+          url: "/add-operational-cost",
         },
         {
-          title: "Segments",
-          url: "#",
-        },
-        {
-          title: "Reviews",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Products",
-      url: "#",
-      icon: Package,
-      items: [
-        {
-          title: "Inventory",
-          url: "#",
-        },
-        {
-          title: "Categories",
-          url: "#",
-        },
-        {
-          title: "Collections",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Finances",
-      url: "#",
-      icon: DollarSign,
-      items: [
-        {
-          title: "Revenue",
-          url: "#",
-        },
-        {
-          title: "Transactions",
-          url: "#",
-        },
-        {
-          title: "Taxes",
+          title: "Edit Operational Cost",
           url: "#",
         },
       ],
@@ -159,23 +90,6 @@ export const data = {
           url: "#",
         },
       ],
-    },
-  ],
-  projects: [
-    {
-      name: "Discounts",
-      url: "#",
-      icon: Tag,
-    },
-    {
-      name: "Invoices",
-      url: "#",
-      icon: FileText,
-    },
-    {
-      name: "Support",
-      url: "#",
-      icon: HelpCircle,
     },
   ],
 }

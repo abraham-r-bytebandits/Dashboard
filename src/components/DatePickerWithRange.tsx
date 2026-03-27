@@ -9,7 +9,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { addDays, format } from "date-fns"
+import { addDays, addMonths, subMonths, isAfter, isBefore, format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { type DateRange } from "react-day-picker"
 
@@ -18,6 +18,16 @@ export function DatePickerWithRange() {
         from: new Date(new Date().getFullYear(), 0, 20),
         to: addDays(new Date(new Date().getFullYear(), 0, 20), 20),
     })
+
+    const handleSelect = (newDate: DateRange | undefined) => {
+        // Enforce the 1 month restriction programmatically
+        if (newDate?.from && newDate?.to) {
+            if (isAfter(newDate.to, addMonths(newDate.from, 1))) {
+                newDate.to = addMonths(newDate.from, 1);
+            }
+        }
+        setDate(newDate);
+    };
 
     return (
         <Field className="mx-auto w-fit">
@@ -49,8 +59,15 @@ export function DatePickerWithRange() {
                             mode="range"
                             defaultMonth={date?.from}
                             selected={date}
-                            onSelect={setDate}
+                            onSelect={handleSelect}
                             numberOfMonths={2}
+                            disabled={
+                                date?.from && !date?.to
+                                    ? (day) =>
+                                          isAfter(day, addMonths(date.from as Date, 1)) ||
+                                          isBefore(day, subMonths(date.from as Date, 1))
+                                    : undefined
+                            }
                             className="[&_.rdp-day_selected]:bg-blue-500 [&_.rdp-day_selected]:text-white [&_.rdp-day]:focus-visible:ring-blue-500"
                         />
                     </div>
