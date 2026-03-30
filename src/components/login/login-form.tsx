@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GoogleLoginButton from "./GoogleLoginButton"
 import { useState } from "react"
 
@@ -46,18 +47,36 @@ export default function LoginForm({
                         <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="loginIdentifier">Email or Phone Number</Label>
-                        <Input
-                            id="loginIdentifier"
-                            type="text"
-                            placeholder="email@example.com or +1234567890"
-                            value={identifier}
-                            onChange={(e) => setIdentifier(e.target.value)}
-                            className="h-10"
-                            required
-                        />
-                    </div>
+                    <Tabs defaultValue="email" className="w-full" onValueChange={() => setIdentifier("")}>
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="email">Email</TabsTrigger>
+                            <TabsTrigger value="mobile">Mobile Number</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="email" className="space-y-1.5 mt-0">
+                            <Label htmlFor="loginEmail">Email Address</Label>
+                            <Input
+                                id="loginEmail"
+                                type="email"
+                                placeholder="name@example.com"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                className="h-10"
+                                required
+                            />
+                        </TabsContent>
+                        <TabsContent value="mobile" className="space-y-1.5 mt-0">
+                            <Label htmlFor="loginMobile">Mobile Number</Label>
+                            <Input
+                                id="loginMobile"
+                                type="tel"
+                                placeholder="+91 9876543210"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                className="h-10"
+                                required
+                            />
+                        </TabsContent>
+                    </Tabs>
 
                     <div className="space-y-1.5">
                         <Label htmlFor="loginPassword">Password</Label>

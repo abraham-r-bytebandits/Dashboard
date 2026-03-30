@@ -50,7 +50,7 @@ const ImageConverter: React.FC = () => {
 
     } catch (err: any) {
       console.error(err);
-      message.error(err.response?.data?.message || "Failed to convert image. Image might be larger than 5MB.");
+      message.error(err.response?.data?.message || "Failed to convert image.");
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +81,7 @@ const ImageConverter: React.FC = () => {
   return (
     <div className="flex-1 w-full bg-[#F3F3F9] p-4 sm:p-6 lg:p-10 min-h-full">
       <div className="max-w-6xl mx-auto space-y-6">
-        
+
         {/* Header Section */}
         <div className="flex flex-col gap-2 mb-8 mt-2 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
@@ -101,19 +101,19 @@ const ImageConverter: React.FC = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          
+
           {/* Upload Section */}
-          <Card 
-            className="lg:col-span-1 shadow-sm rounded-2xl border-gray-100 overflow-hidden flex flex-col h-full" 
+          <Card
+            className="lg:col-span-1 shadow-sm rounded-2xl border-gray-100 overflow-hidden flex flex-col h-full"
             styles={{ body: { padding: '32px', display: 'flex', flexDirection: 'column', flex: 1 } }}
           >
             <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-[#405189] text-xs font-bold text-center">1</span>
               Upload Original Image
             </h3>
-            
-            <Dragger 
-              {...uploadProps} 
+
+            <Dragger
+              {...uploadProps}
               className="bg-gray-50/50 hover:bg-gray-50 transition-colors border-2 border-dashed border-gray-200 rounded-xl overflow-hidden"
               style={{ padding: '32px 16px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
             >
@@ -124,7 +124,7 @@ const ImageConverter: React.FC = () => {
                   </p>
                   <p className="text-lg font-semibold text-gray-800 mb-2">Click or drag image to this area</p>
                   <p className="text-sm text-gray-500 px-4 sm:px-8">
-                    Strict 5MB file size limit. Supported formats include JPG, PNG, GIF, and TIFF.
+                    Supported formats include JPG, PNG, GIF, and TIFF.
                   </p>
                 </>
               ) : (
@@ -149,8 +149,8 @@ const ImageConverter: React.FC = () => {
           </Card>
 
           {/* Result Section */}
-          <Card 
-            className="lg:col-span-1 shadow-sm rounded-2xl border-gray-100 flex flex-col h-full" 
+          <Card
+            className="lg:col-span-1 shadow-sm rounded-2xl border-gray-100 flex flex-col h-full"
             styles={{ body: { padding: '32px', display: 'flex', flexDirection: 'column', flex: 1 } }}
           >
             <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -188,7 +188,7 @@ const ImageConverter: React.FC = () => {
 
                 <div className="w-full mt-auto">
                   <Divider className="my-6" />
-                  
+
                   <div className="w-full space-y-3">
                     <Button
                       type="primary"
