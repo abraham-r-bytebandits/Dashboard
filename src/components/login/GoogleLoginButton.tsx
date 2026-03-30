@@ -22,7 +22,7 @@ declare global {
 }
 
 const CLIENT_ID =
-  "3056590140-6pdu8r2691opggq3fgh314h4oppk2qa0.apps.googleusercontent.com";
+  "435076307853-sp06greujg8shmrtip21kqkmc2gjfm1h.apps.googleusercontent.com";
 
 const GoogleLoginButton = () => {
   const { onAuthSuccess } = useAuth();
