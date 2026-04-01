@@ -167,8 +167,10 @@ export default function SiteManagement() {
             title: "URL",
             dataIndex: "url",
             key: "url",
-            render: (url?: string) =>
-                url ? (
+            render: (url?: string) => {
+                if (!url) return <span className="text-gray-400 italic">No URL</span>;
+                const isLink = url.startsWith("http://") || url.startsWith("https://");
+                return isLink ? (
                     <a
                         href={url}
                         target="_blank"
@@ -179,8 +181,9 @@ export default function SiteManagement() {
                         {url}
                     </a>
                 ) : (
-                    <span className="text-gray-400 italic">No URL</span>
-                ),
+                    <span className="text-gray-800 break-all">{url}</span>
+                );
+            },
         },
         {
             title: "User Name",
