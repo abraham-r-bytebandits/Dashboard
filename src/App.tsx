@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuth, AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import UserManagement from './screens/admin/UserManagement';
+import SiteManagement from './screens/admin/SiteManagement';
 import ClientsList from './screens/clients/ClientsList';
 import InvoicesList from './screens/invoices/InvoicesList';
 import ImageConverter from './screens/ImageConverter';
@@ -19,6 +20,7 @@ function MainArea() {
       <Route path="/add-fixed-cost" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AddExpense type="fixed" /></ProtectedRoute>} />
       <Route path="/add-operational-cost" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AddExpense type="operational" /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><UserManagement /></ProtectedRoute>} />
+      <Route path="/admin/sites" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SiteManagement /></ProtectedRoute>} />
       <Route path="/clients" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ClientsList /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><InvoicesList /></ProtectedRoute>} />
       <Route path="/image-converter" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ImageConverter /></ProtectedRoute>} />

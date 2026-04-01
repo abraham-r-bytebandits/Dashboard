@@ -10,6 +10,7 @@ import {
   Briefcase,
   FileText,
   Image,
+  Globe,
 } from "lucide-react"
 
 export const data = {
@@ -100,6 +101,12 @@ export const data = {
       title: "Invoices",
       url: "/invoices",
       icon: FileText,
+    },
+    {
+      title: "Site Management",
+      url: "/admin/sites",
+      isSuperAdminOnly: true,
+      icon: Globe,
     },
     {
       title: "Settings",
