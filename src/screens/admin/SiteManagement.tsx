@@ -325,9 +325,6 @@ export default function SiteManagement() {
                         name="url"
                         label="URL"
                         required={false}
-                        rules={[
-                            { type: "url", message: "Please enter a valid URL" },
-                        ]}
                     >
                         <Input placeholder="https://example.com" prefix={<GlobalOutlined />} />
                     </Form.Item>
