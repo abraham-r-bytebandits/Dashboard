@@ -27,7 +27,7 @@ interface SiteEntry {
     id: string;
     name: string;
     userName: string;
-    url: string;
+    url?: string;
     password: string;
 }
 
@@ -110,7 +110,7 @@ export default function SiteManagement() {
     };
 
     // ── submit ─────────────────────────────────────────────────────────────
-    const handleSubmit = async (values: { name: string; url: string; userName: string; password: string }) => {
+    const handleSubmit = async (values: { name: string; url?: string; userName: string; password: string }) => {
         setSubmitting(true);
         try {
             if (editingRecord) {
@@ -167,17 +167,20 @@ export default function SiteManagement() {
             title: "URL",
             dataIndex: "url",
             key: "url",
-            render: (url: string) => (
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-[#405189] hover:underline break-all"
-                >
-                    <GlobalOutlined style={{ fontSize: 12 }} />
-                    {url}
-                </a>
-            ),
+            render: (url?: string) =>
+                url ? (
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[#405189] hover:underline break-all"
+                    >
+                        <GlobalOutlined style={{ fontSize: 12 }} />
+                        {url}
+                    </a>
+                ) : (
+                    <span className="text-gray-400 italic">No URL</span>
+                ),
         },
         {
             title: "User Name",
@@ -321,8 +324,8 @@ export default function SiteManagement() {
                     <Form.Item
                         name="url"
                         label="URL"
+                        required={false}
                         rules={[
-                            { required: true, message: "URL is required" },
                             { type: "url", message: "Please enter a valid URL" },
                         ]}
                     >
