@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Table,
     Button,
@@ -19,12 +19,25 @@ import {
     EyeInvisibleOutlined,
     GlobalOutlined,
     LockOutlined,
+    HolderOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 interface SiteEntry {
-    id: string;
+    id?: string;
+    _id?: string;
     name: string;
     userName: string;
     url?: string;
@@ -58,6 +71,51 @@ function PasswordCell({ password }: { password: string }) {
         </Space>
     );
 }
+
+// ── Row ────────────────────────────────────────────────────────────────────
+interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+    'data-row-key': string;
+}
+
+const Row = ({ children, ...props }: RowProps) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        setActivatorNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: props['data-row-key'] as string,
+    });
+
+    const style: React.CSSProperties = {
+        ...props.style,
+        transform: CSS.Transform.toString(transform && { ...transform, scaleY: 1 }),
+        transition,
+        ...(isDragging ? { position: 'relative', zIndex: 9999 } : {}),
+    };
+
+    return (
+        <tr {...props} ref={setNodeRef} style={style} {...attributes}>
+            {React.Children.map(children, (child) => {
+                if ((child as React.ReactElement).key === 'sort') {
+                    return React.cloneElement(child as React.ReactElement<any>, {
+                        children: (
+                            <HolderOutlined
+                                ref={setActivatorNodeRef}
+                                style={{ touchAction: 'none', cursor: 'grab' }}
+                                {...listeners}
+                            />
+                        ),
+                    });
+                }
+                return child;
+            })}
+        </tr>
+    );
+};
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function SiteManagement() {
@@ -134,9 +192,9 @@ export default function SiteManagement() {
     };
 
     // ── delete ─────────────────────────────────────────────────────────────
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (recordId: string) => {
         try {
-            await api.delete(`/sites/${id}`);
+            await api.delete(`/sites/${recordId}`);
             message.success("Site deleted.");
             await fetchSites();
         } catch (error: any) {
@@ -145,8 +203,24 @@ export default function SiteManagement() {
         }
     };
 
+    // ── drag ───────────────────────────────────────────────────────────────
+    const onDragEnd = ({ active, over }: DragEndEvent) => {
+        if (active.id !== over?.id) {
+            setSites((previous) => {
+                const activeIndex = previous.findIndex((i) => (i.id || i._id || i.name)?.toString() === active.id?.toString());
+                const overIndex = previous.findIndex((i) => (i.id || i._id || i.name)?.toString() === over?.id?.toString());
+                return arrayMove(previous, activeIndex, overIndex);
+            });
+        }
+    };
+
     // ── columns ────────────────────────────────────────────────────────────
     const columns = [
+        {
+            key: "sort",
+            width: 50,
+            align: "center" as const,
+        },
         {
             title: "No.",
             key: "no",
@@ -221,7 +295,7 @@ export default function SiteManagement() {
                     <Popconfirm
                         title="Delete this site?"
                         description="This action cannot be undone."
-                        onConfirm={() => handleDelete(record.id)}
+                        onConfirm={() => handleDelete(record.id || record._id as string)}
                         okText="Delete"
                         okButtonProps={{ danger: true }}
                         cancelText="Cancel"
@@ -284,15 +358,33 @@ export default function SiteManagement() {
 
             {/* Table */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <Table
-                    dataSource={sites}
-                    columns={columns}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{ pageSize: 10, showSizeChanger: false }}
-                    scroll={{ x: "max-content" }}
-                    locale={{ emptyText: "No sites added yet." }}
-                />
+                <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
+                    <SortableContext
+                        items={sites.map((i) => (i.id || i._id || i.name)?.toString())}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <Table
+                            components={{
+                                body: {
+                                    row: Row,
+                                },
+                            }}
+                            rowSelection={{
+                                type: 'checkbox',
+                                onChange: (_selectedRowKeys: React.Key[], _selectedRows: SiteEntry[]) => {
+                                    // Selection is tracked internally by Ant Design Table
+                                },
+                            }}
+                            dataSource={sites}
+                            columns={columns}
+                            rowKey={(record) => (record.id || record._id || record.name) as string}
+                            loading={loading}
+                            pagination={{ pageSize: 10, showSizeChanger: false }}
+                            scroll={{ x: "max-content" }}
+                            locale={{ emptyText: "No sites added yet." }}
+                        />
+                    </SortableContext>
+                </DndContext>
             </div>
 
             {/* Add / Edit Modal */}
