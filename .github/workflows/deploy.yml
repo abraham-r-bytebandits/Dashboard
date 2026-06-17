@@ -40,9 +40,51 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "=== BACKEND FILES ==="
-            ls -la /home/ec2-user/backend/ || true
-            echo "=== BACKEND PACKAGE JSON ==="
-            cat /home/ec2-user/backend/package.json || true
-            echo "=== BACKEND ENV ==="
-            cat /home/ec2-user/backend/.env || true
+            # 1. Deploy Frontend static assets
+            sudo rm -rf /usr/share/nginx/html/*
+            sudo cp -r /home/ec2-user/dist/* /usr/share/nginx/html/
+            
+            # 2. Deploy/Start Backend on port 4001
+            echo "=== DEPLOYING BACKEND ==="
+            cd /home/ec2-user/backend/
+            git pull origin main || git pull
+            npm install
+            npm run build
+            if ! grep -q "PORT=" .env; then
+              echo "PORT=4001" >> .env
+            fi
+            pm2 delete dashboard-backend || true
+            PORT=4001 pm2 start dist/server.js --name "dashboard-backend"
+            pm2 save
+            
+            # 3. Configure Nginx Proxy to point to port 4001
+            echo "=== CONFIGURING NGINX PROXY ==="
+            sudo python3 << 'EOF'
+            import glob, re
+            for f in glob.glob('/etc/nginx/conf.d/*.conf'):
+                with open(f, 'r') as file:
+                    content = file.read()
+                if 'abc-testig.duckdns.org' in content and 'listen 443 ssl' in content:
+                    if 'location /api' in content:
+                        if 'http://localhost:4000' in content:
+                            new_content = content.replace('http://localhost:4000', 'http://localhost:4001')
+                            with open(f, 'w') as file:
+                                file.write(new_content)
+                            print("Updated existing API proxy to port 4001 in:", f)
+                        else:
+                            print("API proxy already configured in:", f)
+                        continue
+                    pattern = r'(location\s+/[\s\S]*?try_files[\s\S]*?})'
+                    api_block = """\n\n    location /api {\n        proxy_pass http://localhost:4001;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection 'upgrade';\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }"""
+                    new_content, count = re.subn(pattern, r'\1' + api_block, content, count=1)
+                    if count > 0:
+                        with open(f, 'w') as file:
+                            file.write(new_content)
+                        print("Successfully configured API proxy to port 4001 in:", f)
+                    else:
+                        print("Failed to find location block pattern in:", f)
+            EOF
+            
+            # 4. Restart Nginx
+            sudo nginx -t
+            sudo systemctl restart nginx
