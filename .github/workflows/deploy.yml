@@ -40,29 +40,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo rm -rf /usr/share/nginx/html/*
-            sudo cp -r /home/ec2-user/dist/* /usr/share/nginx/html/
-            
-            echo "=== AUTO CONFIGURING NGINX API PROXY ==="
-            sudo python3 << 'EOF'
-            import glob, re
-            for f in glob.glob('/etc/nginx/conf.d/*.conf'):
-                with open(f, 'r') as file:
-                    content = file.read()
-                if 'abc-testig.duckdns.org' in content and 'listen 443 ssl' in content:
-                    if 'location /api' in content:
-                        print("Location /api already configured in:", f)
-                        continue
-                    pattern = r'(location\s+/[\s\S]*?try_files[\s\S]*?})'
-                    api_block = """\n\n    location /api {\n        proxy_pass http://localhost:4000;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection 'upgrade';\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }"""
-                    new_content, count = re.subn(pattern, r'\1' + api_block, content, count=1)
-                    if count > 0:
-                        with open(f, 'w') as file:
-                            file.write(new_content)
-                        print("Successfully configured API proxy in:", f)
-                    else:
-                        print("Failed to find location block pattern in:", f)
-            EOF
-            
-            sudo nginx -t
-            sudo systemctl restart nginx
+            echo "=== FILES IN HOME ==="
+            ls -la /home/ec2-user/ || true
+            echo "=== PM2 LIST ALL ==="
+            pm2 list || sudo pm2 list || true
+            echo "=== SYSTEMD SERVICES ==="
+            systemctl list-units --type=service | grep -iE 'dash|rimoto|back' || true
