@@ -18,7 +18,7 @@ export default function SpendBreakdown({ data: externalData }: SpendBreakdownPro
     const COLORS = ["#E8542A", "#2DA89A", "#1B5E6E", "#F5C518", "#8B5CF6", "#EC4899", "#10B981"];
     let data = fallbackData;
     
-    if (externalData !== undefined) {
+    if (Array.isArray(externalData)) {
         const totalValue = externalData.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
         data = externalData.map((d, i) => ({
             name: d.name,

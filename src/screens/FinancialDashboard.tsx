@@ -89,9 +89,29 @@ const FinancialDashboard = () => {
                     api.get('/dashboard/chart-data').catch(() => ({ data: { success: false } }))
                 ]);
 
-                if (overviewRes.data?.success || overviewRes.data) setOverview(overviewRes.data?.data || overviewRes.data);
-                if (contributionsRes.data?.success || contributionsRes.data) setContributions(contributionsRes.data?.data || contributionsRes.data || []);
-                if (chartDataRes.data?.success || chartDataRes.data) setChartDataPayload(chartDataRes.data?.data || chartDataRes.data);
+                if (overviewRes.data?.success) {
+                    setOverview(overviewRes.data.data);
+                } else if (overviewRes.data && !overviewRes.data.success) {
+                    setOverview(null);
+                } else if (overviewRes.data) {
+                    setOverview(overviewRes.data);
+                }
+
+                if (contributionsRes.data?.success && Array.isArray(contributionsRes.data?.data)) {
+                    setContributions(contributionsRes.data.data);
+                } else if (Array.isArray(contributionsRes.data)) {
+                    setContributions(contributionsRes.data);
+                } else {
+                    setContributions([]);
+                }
+
+                if (chartDataRes.data?.success) {
+                    setChartDataPayload(chartDataRes.data.data);
+                } else if (chartDataRes.data && !chartDataRes.data.success) {
+                    setChartDataPayload(null);
+                } else if (chartDataRes.data) {
+                    setChartDataPayload(chartDataRes.data);
+                }
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
             } finally {

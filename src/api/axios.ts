@@ -30,7 +30,21 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig): InternalAxios
 
 // Auto refresh token if access token expires
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const contentType = response.headers["content-type"];
+    if (contentType && contentType.includes("text/html")) {
+      return Promise.reject(
+        new AxiosError(
+          "Expected JSON response, but received HTML. The API server might be down or misconfigured.",
+          "ERR_BAD_RESPONSE",
+          response.config,
+          response.request,
+          response
+        )
+      );
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig;
 

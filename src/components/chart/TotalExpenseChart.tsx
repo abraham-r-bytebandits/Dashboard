@@ -35,7 +35,7 @@ export default function TotalExpenseChart({ data: externalData }: TotalExpenseCh
     let chartData: any[] = [];
     let total = 0;
 
-    if (externalData !== undefined && externalData.length > 0) {
+    if (Array.isArray(externalData) && externalData.length > 0) {
         chartData = externalData.map((d: any) => ({
             label: d.date ? d.date.substring(5) : (d.label || ""),
             value: Number(d.expenses ?? d.value ?? 0)
