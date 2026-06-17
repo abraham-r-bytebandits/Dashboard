@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Table, Button, Modal, Input, Tag, Popconfirm, message, Space, Card } from "antd";
+import { Table, Button, Modal, Input, Tag, Popconfirm, message, Space } from "antd";
 import { DeleteOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
@@ -43,15 +43,8 @@ export default function ContactMessagesList() {
     };
 
     useEffect(() => {
-        // Initial fetch with spinner
+        // Fetch contacts on mount, page change, or search
         fetchContacts(currentPage, pageSize, search, true);
-
-        // Auto-refresh contacts every 15 seconds in the background
-        const intervalId = setInterval(() => {
-            fetchContacts(currentPage, pageSize, search, false);
-        }, 15000);
-
-        return () => clearInterval(intervalId);
     }, [currentPage, pageSize, search]);
 
     const handleSearch = () => {
@@ -104,7 +97,7 @@ export default function ContactMessagesList() {
             dataIndex: 'website',
             key: 'website',
             render: (text: string) => text ? (
-                <a href={text.startsWith('http') ? text : `http://${text}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm truncate max-w-[150px] inline-block">
+                <a href={text.startsWith('http') ? text : `http://${text}`} target="_blank" rel="noopener noreferrer" className="text-[#405189] hover:underline text-sm truncate max-w-[150px] inline-block font-medium">
                     {text}
                 </a>
             ) : '-'
@@ -140,7 +133,7 @@ export default function ContactMessagesList() {
                         type="text" 
                         icon={<EyeOutlined />} 
                         onClick={() => showDetails(record)}
-                        className="text-blue-600 hover:text-blue-800"
+                        style={{ color: "#405189" }}
                     />
                     {canDelete && (
                         <Popconfirm
@@ -164,30 +157,38 @@ export default function ContactMessagesList() {
                 <h1 className="text-2xl font-semibold text-[#405189]">Contact Messages</h1>
             </div>
 
-            <Card className="mb-6 border-none shadow-sm">
-                <div className="flex gap-3 max-w-md">
+            <div className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-3 max-w-lg">
                     <Input
                         placeholder="Search name, email or message..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onPressEnter={handleSearch}
                         prefix={<SearchOutlined className="text-gray-400" />}
+                        className="flex-1"
                     />
-                    <Button type="primary" onClick={handleSearch}>
-                        Search
-                    </Button>
-                    <Button onClick={handleReset}>
-                        Reset
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button 
+                            type="primary" 
+                            onClick={handleSearch}
+                            style={{ background: "#405189", borderColor: "#405189" }}
+                        >
+                            Search
+                        </Button>
+                        <Button onClick={handleReset}>
+                            Reset
+                        </Button>
+                    </div>
                 </div>
-            </Card>
+            </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <Table
                     dataSource={contacts}
                     columns={columns}
                     rowKey={(record) => record.publicId || record.id}
                     loading={loading}
+                    scroll={{ x: "max-content" }}
                     pagination={{
                         current: currentPage,
                         pageSize: pageSize,
@@ -207,11 +208,16 @@ export default function ContactMessagesList() {
             </div>
 
             <Modal
-                title={<span className="text-lg font-semibold text-gray-800">Contact Message Details</span>}
+                title={<span className="text-lg font-semibold text-[#405189]">Contact Message Details</span>}
                 open={isDetailsModalVisible}
                 onCancel={() => setIsDetailsModalVisible(false)}
                 footer={[
-                    <Button key="close" type="primary" onClick={() => setIsDetailsModalVisible(false)}>
+                    <Button 
+                        key="close" 
+                        type="primary" 
+                        onClick={() => setIsDetailsModalVisible(false)}
+                        style={{ background: "#405189", borderColor: "#405189" }}
+                    >
                         Close
                     </Button>
                 ]}
@@ -233,14 +239,14 @@ export default function ContactMessagesList() {
                             </div>
                             <div>
                                 <span className="text-xs text-gray-500 block font-medium">Email Address</span>
-                                <a href={`mailto:${selectedContact.email}`} className="text-blue-600 hover:underline font-semibold">
+                                <a href={`mailto:${selectedContact.email}`} className="text-[#405189] hover:underline font-semibold">
                                     {selectedContact.email}
                                 </a>
                             </div>
                             <div>
                                 <span className="text-xs text-gray-500 block font-medium">Phone Number</span>
                                 {selectedContact.phone ? (
-                                    <a href={`tel:${selectedContact.phone}`} className="text-blue-600 hover:underline font-semibold">
+                                    <a href={`tel:${selectedContact.phone}`} className="text-[#405189] hover:underline font-semibold">
                                         {selectedContact.phone}
                                     </a>
                                 ) : (
@@ -254,7 +260,7 @@ export default function ContactMessagesList() {
                                         href={selectedContact.website.startsWith('http') ? selectedContact.website : `http://${selectedContact.website}`} 
                                         target="_blank" 
                                         rel="noopener noreferrer" 
-                                        className="text-blue-600 hover:underline font-semibold truncate max-w-[200px] inline-block"
+                                        className="text-[#405189] hover:underline font-semibold truncate max-w-[200px] inline-block"
                                     >
                                         {selectedContact.website}
                                     </a>
