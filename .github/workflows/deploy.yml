@@ -40,9 +40,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "=== FILES IN HOME ==="
-            ls -la /home/ec2-user/ || true
-            echo "=== PM2 LIST ALL ==="
-            pm2 list || sudo pm2 list || true
-            echo "=== SYSTEMD SERVICES ==="
-            systemctl list-units --type=service | grep -iE 'dash|rimoto|back' || true
+            echo "=== BACKEND FILES ==="
+            ls -la /home/ec2-user/backend/ || true
+            echo "=== BACKEND PACKAGE JSON ==="
+            cat /home/ec2-user/backend/package.json || true
+            echo "=== BACKEND ENV ==="
+            cat /home/ec2-user/backend/.env || true
