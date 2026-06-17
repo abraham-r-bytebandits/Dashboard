@@ -115,7 +115,7 @@ export default function LoginForm({
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full h-10 font-semibold mt-4" disabled={isLoading}>
+                    <Button type="submit" className="w-full h-10 !text-white font-semibold mt-4 bg-[#405189] hover:bg-[#405189]" disabled={isLoading}>
                         {isLoading ? "Signing In..." : "Sign In"}
                     </Button>
 

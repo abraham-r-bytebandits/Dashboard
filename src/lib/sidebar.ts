@@ -11,6 +11,7 @@ import {
   FileText,
   Image,
   Globe,
+  Mail,
 } from "lucide-react"
 
 export const data = {
@@ -107,6 +108,12 @@ export const data = {
       url: "/admin/sites",
       isSuperAdminOnly: true,
       icon: Globe,
+    },
+    {
+      title: "Contact Messages",
+      url: "/admin/contacts",
+      isAdminOnly: true,
+      icon: Mail,
     },
     {
       title: "Settings",
