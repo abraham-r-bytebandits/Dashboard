@@ -46,16 +46,62 @@ jobs:
             
             # 2. Deploy/Start Backend on port 4001
             echo "=== DEPLOYING BACKEND ==="
-            cd /home/ec2-user/backend/
-            git pull origin main || git pull
-            npm install
-            npm run build
-            if ! grep -q "PORT=" .env; then
-              echo "PORT=4001" >> .env
+            
+            # Back up existing .env file if it exists to prevent loss of database configuration
+            if [ -f /home/ec2-user/backend/.env ]; then
+              echo "Backing up existing .env file..."
+              cp /home/ec2-user/backend/.env /home/ec2-user/backend_env_backup
             fi
+            
+            # Ensure it is a valid Git repository
+            if [ ! -d /home/ec2-user/backend/.git ]; then
+              echo "Directory is not a git repository. Re-cloning..."
+              sudo rm -rf /home/ec2-user/backend
+              git clone https://github.com/abraham-r-bytebandits/Dashboard-Backend.git /home/ec2-user/backend
+            else
+              cd /home/ec2-user/backend
+              git fetch origin
+              git checkout main || git checkout -b main
+              git pull origin main
+            fi
+            
+            cd /home/ec2-user/backend
+            
+            # Restore .env backup
+            if [ -f /home/ec2-user/backend_env_backup ]; then
+              echo "Restoring .env file..."
+              mv /home/ec2-user/backend_env_backup .env
+            fi
+            
+            # Ensure PORT=4001 is set in .env
+            if [ -f .env ]; then
+              if ! grep -q "PORT=" .env; then
+                echo "PORT=4001" >> .env
+              else
+                # Replace any existing PORT definition with PORT=4001
+                sed -i 's/^PORT=.*/PORT=4001/' .env
+              fi
+            else
+              echo "PORT=4001" > .env
+            fi
+            
+            # Install, generate prisma client, run migrations, and build
+            npm install
+            npx prisma generate
+            npx prisma migrate deploy || echo "Prisma migrations skipped or failed."
+            npm run build
+            
+            # Restart backend via PM2
             pm2 delete dashboard-backend || true
             PORT=4001 pm2 start dist/server.js --name "dashboard-backend"
             pm2 save
+            
+            # Print status and logs for diagnostics
+            echo "=== DEPLOYMENT DIAGNOSTICS ==="
+            sleep 2
+            pm2 show dashboard-backend || true
+            pm2 logs dashboard-backend --no-color --limit 30 || true
+            
             
             # 3. Configure Nginx Proxy to point to port 4001
             echo "=== CONFIGURING NGINX PROXY ==="
