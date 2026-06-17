@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Modal, Input, Tag, Popconfirm, message, Space } from "antd";
-import { DeleteOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EyeOutlined, SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
 
@@ -16,7 +16,38 @@ export default function ContactMessagesList() {
     const [selectedContact, setSelectedContact] = useState<any>(null);
     const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
 
+    const [exportLoading, setExportLoading] = useState(false);
+
     const canDelete = isSuperAdmin || isAdmin;
+
+    const handleExport = async () => {
+        try {
+            setExportLoading(true);
+            const queryParams = [];
+            if (search) {
+                queryParams.push(`search=${encodeURIComponent(search)}`);
+            }
+            const res = await api.get(`/contacts/export?${queryParams.join("&")}`, {
+                responseType: 'blob'
+            });
+            
+            const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'contact_messages.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            message.success("Contact messages exported successfully");
+        } catch (error) {
+            message.error("Failed to export contact messages");
+        } finally {
+            setExportLoading(false);
+        }
+    };
 
     const fetchContacts = async (page = currentPage, limit = pageSize, searchQuery = search, showSpinner = true) => {
         try {
@@ -109,16 +140,6 @@ export default function ContactMessagesList() {
             render: (text: string) => new Date(text).toLocaleString(),
         },
         {
-            title: 'Consent',
-            dataIndex: 'consent',
-            key: 'consent',
-            render: (consent: boolean) => (
-                <Tag color={consent ? 'green' : 'gray'}>
-                    {consent ? 'Granted' : 'Not Granted'}
-                </Tag>
-            )
-        },
-        {
             title: 'Source',
             dataIndex: 'source',
             key: 'source',
@@ -155,6 +176,15 @@ export default function ContactMessagesList() {
         <div className="p-6 bg-gray-50 min-h-screen w-full">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-semibold text-[#405189]">Contact Messages</h1>
+                <Button 
+                    type="primary" 
+                    icon={<DownloadOutlined />} 
+                    loading={exportLoading}
+                    onClick={handleExport}
+                    style={{ background: "#405189", borderColor: "#405189" }}
+                >
+                    Export Excel
+                </Button>
             </div>
 
             <div className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -267,12 +297,6 @@ export default function ContactMessagesList() {
                                 ) : (
                                     <span className="text-gray-400 font-medium">-</span>
                                 )}
-                            </div>
-                            <div>
-                                <span className="text-xs text-gray-500 block font-medium">Marketing Consent</span>
-                                <Tag color={selectedContact.consent ? 'green' : 'gray'} className="mt-1">
-                                    {selectedContact.consent ? 'Granted' : 'Not Granted'}
-                                </Tag>
                             </div>
                             {selectedContact.source && (
                                 <div className="col-span-2">
