@@ -43,3 +43,11 @@ jobs:
             sudo rm -rf /usr/share/nginx/html/*
             sudo cp -r /home/ec2-user/dist/* /usr/share/nginx/html/
             sudo systemctl restart nginx
+            echo "=== RUNNING PROCESSES / PORTS ==="
+            sudo ss -tulpn || sudo netstat -tulpn || true
+            echo "=== PM2 STATUS ==="
+            sudo pm2 status || pm2 list || true
+            echo "=== NGINX CONFIGURATION ==="
+            sudo cat /etc/nginx/nginx.conf
+            echo "=== NGINX SITES CONFIG ==="
+            sudo cat /etc/nginx/sites-enabled/* || sudo cat /etc/nginx/conf.d/* || true
