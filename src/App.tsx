@@ -42,7 +42,6 @@ function AppContent() {
     <>
       {showModal && <AuthModal />}
 
-      {/* If the dashboard should be completely hidden until authenticated: */}
       {user ? (
         <SidebarProvider>
           <div className="flex min-h-screen w-full bg-[#f8fafc]">
