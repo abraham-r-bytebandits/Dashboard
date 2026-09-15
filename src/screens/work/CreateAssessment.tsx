@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Calendar,
@@ -12,95 +12,94 @@ import {
   Building2,
   Globe,
   Sparkles,
-} from "lucide-react";
-import { message } from "antd";
-import { useQuery } from "@tanstack/react-query";
-import { useAppDispatch } from "@/hooks/redux";
-import { addWorkItem, addTeamMember } from "@/store/workSlice";
-import { roleService, mapApiUserToAssignee } from "@/services/roleService";
-import { workService } from "@/services/workService";
-import { apiClient } from "@/lib/apiClient";
-import { queryClient } from "@/lib/queryClient";
-import { WORK_STATUS_OPTIONS_WITH_DESC } from "@/data/options";
+} from 'lucide-react'
+import { message } from 'antd'
+import { useQuery } from '@tanstack/react-query'
+import { useAppDispatch } from '@/hooks/redux'
+import { addWorkItem, addTeamMember } from '@/store/workSlice'
+import { roleService, mapApiUserToAssignee } from '@/services/roleService'
+import { workService } from '@/services/workService'
+import { apiClient } from '@/lib/apiClient'
+import { queryClient } from '@/lib/queryClient'
+import { WORK_STATUS_OPTIONS_WITH_DESC } from '@/data/options'
 import type {
   Priority,
   WorkStatus,
   UserAffiliation,
   Assignee,
   WorkItem,
-} from "@/types/work";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+} from '@/types/work'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 export default function CreateAssessment() {
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const [searchParams] = useSearchParams()
 
-  const initialStatus = (searchParams.get("status") as WorkStatus) || "new";
-  const initialPriority =
-    (searchParams.get("priority") as Priority) || "medium";
+  const initialStatus = (searchParams.get('status') as WorkStatus) || 'new'
+  const initialPriority = (searchParams.get('priority') as Priority) || 'medium'
 
   const { data: functionalRoles = [] } = useQuery({
-    queryKey: ["functional-roles"],
+    queryKey: ['functional-roles'],
     queryFn: roleService.getFunctionalRoles,
-  });
+  })
 
   // Fetch real users from API
   const { data: apiUsers = [] } = useQuery<Assignee[]>({
-    queryKey: ["team-directory-users"],
+    queryKey: ['team-directory-users'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get("/admin/users?page=1&pageSize=100");
-        const users = res.data?.data || res.data || [];
-        return (Array.isArray(users) ? users : []).map(mapApiUserToAssignee);
+        const res = await apiClient.get('/admin/users?page=1&pageSize=100')
+        const users = res.data?.data || res.data || []
+        return (Array.isArray(users) ? users : []).map(mapApiUserToAssignee)
       } catch {
-        return [];
+        return []
       }
     },
-  });
+  })
 
-  const [localCollaborators, setLocalCollaborators] = useState<Assignee[]>([]);
-  const teamDirectory = [...apiUsers, ...localCollaborators];
+  const [localCollaborators, setLocalCollaborators] = useState<Assignee[]>([])
+  const teamDirectory = [...apiUsers, ...localCollaborators]
 
   // Form State
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState(
     () =>
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         .toISOString()
-        .split("T")[0],
-  );
-  const [priority, setPriority] = useState<Priority>(initialPriority);
-  const [status, setStatus] = useState<WorkStatus>(initialStatus);
-  const [milestoneTotal, setMilestoneTotal] = useState(4);
-  const [milestoneCompleted, setMilestoneCompleted] = useState(0);
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+        .split('T')[0],
+  )
+  const [priority, setPriority] = useState<Priority>(initialPriority)
+  const [status, setStatus] = useState<WorkStatus>(initialStatus)
+  const [milestoneTotal, setMilestoneTotal] = useState(4)
+  const [milestoneCompleted, setMilestoneCompleted] = useState(0)
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
 
   // New Collaborator Modal / Inline Form State
-  const [showAddCollaborator, setShowAddCollaborator] = useState(false);
-  const [newCollabName, setNewCollabName] = useState("");
-  const [newCollabRole, setNewCollabRole] = useState("");
+  const [showAddCollaborator, setShowAddCollaborator] = useState(false)
+  const [newCollabName, setNewCollabName] = useState('')
+  const [newCollabRole, setNewCollabRole] = useState('')
   const [newCollabAffiliation, setNewCollabAffiliation] =
-    useState<UserAffiliation>("internal");
-  const [newCollabEmail, setNewCollabEmail] = useState("");
+    useState<UserAffiliation>('internal')
+  const [newCollabEmail, setNewCollabEmail] = useState('')
 
   const handleToggleAssignee = (id: string) => {
     setSelectedAssigneeIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
+    )
+  }
 
   const handleCreateNewCollaborator = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!newCollabName.trim()) {
-      message.error("Please enter collaborator name");
-      return;
+      message.error('Please enter collaborator name')
+      return
     }
 
-    const assignedRole = newCollabRole || functionalRoles[0]?.name || "Member";
-    const newMemberId = `usr-${crypto.randomUUID()}`;
+    const assignedRole = newCollabRole || functionalRoles[0]?.name || 'Member'
+    const newMemberId = `usr-${crypto.randomUUID()}`
 
     const newMember: Assignee = {
       id: newMemberId,
@@ -108,34 +107,34 @@ export default function CreateAssessment() {
       role: assignedRole,
       affiliation: newCollabAffiliation,
       email: newCollabEmail.trim() || undefined,
-    };
+    }
 
-    setLocalCollaborators((prev) => [...prev, newMember]);
-    dispatch(addTeamMember(newMember));
+    setLocalCollaborators((prev) => [...prev, newMember])
+    dispatch(addTeamMember(newMember))
     // Automatically select the newly created collaborator
-    setSelectedAssigneeIds((prev) => [...prev, newMember.id]);
+    setSelectedAssigneeIds((prev) => [...prev, newMember.id])
 
     message.success(
-      `Added ${newMember.name} (${newMember.role} · ${newMember.affiliation === "internal" ? "Internal" : "External"}) to Directory!`,
-    );
+      `Added ${newMember.name} (${newMember.role} · ${newMember.affiliation === 'internal' ? 'Internal' : 'External'}) to Directory!`,
+    )
 
     // Reset inline form
-    setNewCollabName("");
-    setNewCollabEmail("");
-    setShowAddCollaborator(false);
-  };
+    setNewCollabName('')
+    setNewCollabEmail('')
+    setShowAddCollaborator(false)
+  }
 
-  const handleSubmit = async (targetBoard: "status" | "priority") => {
+  const handleSubmit = async (targetBoard: 'status' | 'priority') => {
     if (!title.trim()) {
-      message.error("Please enter an assessment title");
-      return;
+      message.error('Please enter an assessment title')
+      return
     }
 
     const selectedAssignees = teamDirectory.filter((m) =>
       selectedAssigneeIds.includes(m.id),
-    );
+    )
 
-    const workItemId = `work-${crypto.randomUUID()}`;
+    const workItemId = `work-${crypto.randomUUID()}`
     const newWorkItem: WorkItem = {
       id: workItemId,
       title: title.trim(),
@@ -151,24 +150,24 @@ export default function CreateAssessment() {
       attachmentsCount: 0,
       commentsCount: 0,
       createdAt: new Date().toISOString(),
-    };
+    }
 
     try {
-      await workService.createWorkItem(newWorkItem);
-      queryClient.invalidateQueries({ queryKey: ["work-items"] });
+      await workService.createWorkItem(newWorkItem)
+      queryClient.invalidateQueries({ queryKey: ['work-items'] })
     } catch {
       // offline/fallback
     }
-    dispatch(addWorkItem(newWorkItem));
+    dispatch(addWorkItem(newWorkItem))
 
-    message.success("Work assessment created successfully!");
+    message.success('Work assessment created successfully!')
 
-    if (targetBoard === "priority") {
-      navigate("/work/impact-board");
+    if (targetBoard === 'priority') {
+      navigate('/work/impact-board')
     } else {
-      navigate("/work/status-board");
+      navigate('/work/status-board')
     }
-  };
+  }
 
   return (
     <div className="min-h-screen w-full overflow-y-auto bg-muted/20 p-6 md:p-8">
@@ -176,7 +175,7 @@ export default function CreateAssessment() {
         {/* Navigation & Header */}
         <div className="mb-6">
           <Button
-            onClick={() => navigate("/work/status-board")}
+            onClick={() => navigate('/work/status-board')}
             variant="ghost"
             size="sm"
             className="mb-4 gap-1.5 text-xs"
@@ -291,12 +290,12 @@ export default function CreateAssessment() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {/* High */}
               <div
-                onClick={() => setPriority("high")}
+                onClick={() => setPriority('high')}
                 className={cn(
-                  "cursor-pointer rounded-lg border p-4 transition-all",
-                  priority === "high"
-                    ? "border-kanban-board-circle-red bg-kanban-board-circle-red/10 ring-2 ring-kanban-board-circle-red/30"
-                    : "border-border bg-background hover:border-kanban-board-circle-red/30",
+                  'cursor-pointer rounded-lg border p-4 transition-all',
+                  priority === 'high'
+                    ? 'border-kanban-board-circle-red bg-kanban-board-circle-red/10 ring-2 ring-kanban-board-circle-red/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-red/30',
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
@@ -313,12 +312,12 @@ export default function CreateAssessment() {
 
               {/* Medium */}
               <div
-                onClick={() => setPriority("medium")}
+                onClick={() => setPriority('medium')}
                 className={cn(
-                  "cursor-pointer rounded-lg border p-4 transition-all",
-                  priority === "medium"
-                    ? "border-kanban-board-circle-yellow bg-kanban-board-circle-yellow/10 ring-2 ring-kanban-board-circle-yellow/30"
-                    : "border-border bg-background hover:border-kanban-board-circle-yellow/30",
+                  'cursor-pointer rounded-lg border p-4 transition-all',
+                  priority === 'medium'
+                    ? 'border-kanban-board-circle-yellow bg-kanban-board-circle-yellow/10 ring-2 ring-kanban-board-circle-yellow/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-yellow/30',
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
@@ -335,12 +334,12 @@ export default function CreateAssessment() {
 
               {/* Low */}
               <div
-                onClick={() => setPriority("low")}
+                onClick={() => setPriority('low')}
                 className={cn(
-                  "cursor-pointer rounded-lg border p-4 transition-all",
-                  priority === "low"
-                    ? "border-kanban-board-circle-blue bg-kanban-board-circle-blue/10 ring-2 ring-kanban-board-circle-blue/30"
-                    : "border-border bg-background hover:border-kanban-board-circle-blue/30",
+                  'cursor-pointer rounded-lg border p-4 transition-all',
+                  priority === 'low'
+                    ? 'border-kanban-board-circle-blue bg-kanban-board-circle-blue/10 ring-2 ring-kanban-board-circle-blue/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-blue/30',
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
@@ -446,8 +445,8 @@ export default function CreateAssessment() {
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 {showAddCollaborator
-                  ? "Close Collaborator Form"
-                  : "+ Add New Collaborator"}
+                  ? 'Close Collaborator Form'
+                  : '+ Add New Collaborator'}
               </Button>
             </div>
 
@@ -482,7 +481,7 @@ export default function CreateAssessment() {
                       Functional Role
                     </label>
                     <select
-                      value={newCollabRole || functionalRoles[0]?.name || ""}
+                      value={newCollabRole || functionalRoles[0]?.name || ''}
                       onChange={(e) => setNewCollabRole(e.target.value)}
                       className="border-input focus-visible:ring-ring h-8 w-full rounded-md border bg-background px-2 text-xs outline-none"
                     >
@@ -555,23 +554,23 @@ export default function CreateAssessment() {
 
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 {teamDirectory.map((member) => {
-                  const isSelected = selectedAssigneeIds.includes(member.id);
+                  const isSelected = selectedAssigneeIds.includes(member.id)
                   return (
                     <div
                       key={member.id}
                       onClick={() => handleToggleAssignee(member.id)}
                       className={cn(
-                        "cursor-pointer rounded-lg border p-3 transition-all flex items-center gap-3",
+                        'cursor-pointer rounded-lg border p-3 transition-all flex items-center gap-3',
                         isSelected
-                          ? "border-primary bg-primary/10 ring-1 ring-primary"
-                          : "border-border bg-background hover:bg-muted/40",
+                          ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                          : 'border-border bg-background hover:bg-muted/40',
                       )}
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
                         {member.name
-                          .split(" ")
+                          .split(' ')
                           .map((n) => n[0])
-                          .join("")}
+                          .join('')}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -593,13 +592,13 @@ export default function CreateAssessment() {
                           </span>
                           <span
                             className={cn(
-                              "text-[10px] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5",
-                              member.affiliation === "internal"
-                                ? "bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue"
-                                : "bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple",
+                              'text-[10px] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5',
+                              member.affiliation === 'internal'
+                                ? 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue'
+                                : 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple',
                             )}
                           >
-                            {member.affiliation === "internal" ? (
+                            {member.affiliation === 'internal' ? (
                               <>
                                 <Building2 className="h-2.5 w-2.5" />
                                 Internal
@@ -614,7 +613,7 @@ export default function CreateAssessment() {
                         </div>
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
 
@@ -631,7 +630,7 @@ export default function CreateAssessment() {
           <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
             <Button
               type="button"
-              onClick={() => navigate("/work/status-board")}
+              onClick={() => navigate('/work/status-board')}
               variant="outline"
               size="default"
               className="text-xs"
@@ -641,7 +640,7 @@ export default function CreateAssessment() {
 
             <Button
               type="button"
-              onClick={() => handleSubmit("priority")}
+              onClick={() => handleSubmit('priority')}
               variant="default"
               size="default"
               className="gap-1.5 text-xs bg-kanban-board-circle-yellow hover:bg-kanban-board-circle-yellow/90"
@@ -652,7 +651,7 @@ export default function CreateAssessment() {
 
             <Button
               type="button"
-              onClick={() => handleSubmit("status")}
+              onClick={() => handleSubmit('status')}
               variant="default"
               size="default"
               className="gap-1.5 text-xs"
@@ -664,5 +663,5 @@ export default function CreateAssessment() {
         </div>
       </div>
     </div>
-  );
+  )
 }

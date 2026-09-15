@@ -1,22 +1,19 @@
-import { useDroppable } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
-import type { WorkItem } from "@/types/work";
-import { cn } from "@/lib/utils";
-import { WorkCard } from "./WorkCard";
-import { Button } from "@/components/ui/button";
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { Plus } from 'lucide-react'
+import type { WorkItem } from '@/types/work'
+import { cn } from '@/lib/utils'
+import { WorkCard } from './WorkCard'
+import { Button } from '@/components/ui/button'
 
 type KanbanColumnProps = {
-  id: string;
-  title: string;
-  items: WorkItem[];
-  color: string;
-  showStatus?: boolean;
-  onAddTask?: () => void;
-};
+  id: string
+  title: string
+  items: WorkItem[]
+  color: string
+  showStatus?: boolean
+  onAddTask?: () => void
+}
 
 export function KanbanColumn({
   id,
@@ -26,7 +23,7 @@ export function KanbanColumn({
   showStatus,
   onAddTask,
 }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
     <div className="flex min-w-[320px] max-w-[340px] flex-1 flex-col">
@@ -34,7 +31,7 @@ export function KanbanColumn({
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              "h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-background ring-border",
+              'h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-background ring-border',
               color,
             )}
           />
@@ -60,8 +57,8 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "bg-muted/20 flex-1 space-y-3 rounded-xl p-3 border border-border/40 min-h-[500px] transition-colors",
-          isOver && "bg-primary/5 ring-2 ring-primary/40 border-primary/40",
+          'bg-muted/20 flex-1 space-y-3 rounded-xl p-3 border border-border/40 min-h-[500px] transition-colors',
+          isOver && 'bg-primary/5 ring-2 ring-primary/40 border-primary/40',
         )}
       >
         <SortableContext
@@ -82,5 +79,5 @@ export function KanbanColumn({
         )}
       </div>
     </div>
-  );
+  )
 }
