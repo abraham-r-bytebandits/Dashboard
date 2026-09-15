@@ -28,26 +28,26 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
   }
 
   const priorityConfig = {
-    high: { label: 'High', className: 'bg-red-50 text-red-700 border-red-200' },
-    medium: { label: 'Medium', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-    low: { label: 'Low', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+    high: { label: 'High', className: 'bg-kanban-board-circle-red/10 text-kanban-board-circle-red border-kanban-board-circle-red/30' },
+    medium: { label: 'Medium', className: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30' },
+    low: { label: 'Low', className: 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30' },
   }
 
   const statusConfig = {
-    new: { label: 'New', className: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-    todo: { label: 'To do', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-    clarifications: { label: 'Clarifications', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-    under_analysis: { label: 'Under analysis', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-    approval: { label: 'Approval', className: 'bg-green-50 text-green-700 border-green-200' },
+    new: { label: 'New', className: 'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan border-kanban-board-circle-cyan/30' },
+    todo: { label: 'To do', className: 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30' },
+    clarifications: { label: 'Clarifications', className: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30' },
+    under_analysis: { label: 'Under analysis', className: 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple border-kanban-board-circle-purple/30' },
+    approval: { label: 'Approval', className: 'bg-kanban-board-circle-green/10 text-kanban-board-circle-green border-kanban-board-circle-green/30' },
   }
 
   const roleColors: Record<string, string> = {
-    Developer: 'bg-indigo-100 text-indigo-700',
-    Marketing: 'bg-pink-100 text-pink-700',
-    Design: 'bg-amber-100 text-amber-700',
-    Product: 'bg-violet-100 text-violet-700',
-    QA: 'bg-teal-100 text-teal-700',
-    Operations: 'bg-gray-100 text-gray-700',
+    Developer: 'bg-kanban-board-circle-indigo/10 text-kanban-board-circle-indigo',
+    Marketing: 'bg-kanban-board-circle-pink/10 text-kanban-board-circle-pink',
+    Design: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow',
+    Product: 'bg-kanban-board-circle-violet/10 text-kanban-board-circle-violet',
+    QA: 'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan',
+    Operations: 'bg-kanban-board-circle-gray/10 text-kanban-board-circle-gray',
   }
 
   const dueDate = new Date(item.dueDate)
@@ -207,7 +207,7 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
                 key={idx}
                 className={cn(
                   'h-1.5 flex-1 rounded-full transition-colors',
-                  isCompleted ? 'bg-emerald-500' : 'bg-slate-200'
+                  isCompleted ? 'bg-kanban-board-circle-green' : 'bg-muted'
                 )}
               />
             )
@@ -228,7 +228,7 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
               {item.assignees.map((assignee) => (
                 <div
                   key={assignee.id}
-                  className="bg-slate-800 text-white flex h-6 w-6 items-center justify-center rounded-full border border-background text-[10px] font-medium shadow-xs"
+                  className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full border border-background text-[10px] font-medium shadow-xs"
                   title={`${assignee.name} — ${assignee.role} (${assignee.affiliation === 'internal' ? 'Internal' : 'External'})`}
                 >
                   {assignee.name

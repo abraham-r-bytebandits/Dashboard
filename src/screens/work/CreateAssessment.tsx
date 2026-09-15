@@ -286,15 +286,15 @@ export default function CreateAssessment() {
                 className={cn(
                   'cursor-pointer rounded-lg border p-4 transition-all',
                   priority === 'high'
-                    ? 'border-red-500 bg-red-500/10 ring-2 ring-red-500/30'
-                    : 'border-border bg-background hover:border-red-300'
+                    ? 'border-kanban-board-circle-red bg-kanban-board-circle-red/10 ring-2 ring-kanban-board-circle-red/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-red/30'
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-semibold text-xs text-red-600">
+                  <span className="font-semibold text-xs text-kanban-board-circle-red">
                     High Priority
                   </span>
-                  <Flag className="h-4 w-4 text-red-500" />
+                  <Flag className="h-4 w-4 text-kanban-board-circle-red" />
                 </div>
                 <p className="text-muted-foreground text-xs">
                   Critical milestone, blocking dependencies, or high business impact.
@@ -307,15 +307,15 @@ export default function CreateAssessment() {
                 className={cn(
                   'cursor-pointer rounded-lg border p-4 transition-all',
                   priority === 'medium'
-                    ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30'
-                    : 'border-border bg-background hover:border-amber-300'
+                    ? 'border-kanban-board-circle-yellow bg-kanban-board-circle-yellow/10 ring-2 ring-kanban-board-circle-yellow/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-yellow/30'
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-semibold text-xs text-amber-600">
+                  <span className="font-semibold text-xs text-kanban-board-circle-yellow">
                     Medium Priority
                   </span>
-                  <Flag className="h-4 w-4 text-amber-500" />
+                  <Flag className="h-4 w-4 text-kanban-board-circle-yellow" />
                 </div>
                 <p className="text-muted-foreground text-xs">
                   Important delivery within standard sprint and operational schedule.
@@ -328,15 +328,15 @@ export default function CreateAssessment() {
                 className={cn(
                   'cursor-pointer rounded-lg border p-4 transition-all',
                   priority === 'low'
-                    ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
-                    : 'border-border bg-background hover:border-blue-300'
+                    ? 'border-kanban-board-circle-blue bg-kanban-board-circle-blue/10 ring-2 ring-kanban-board-circle-blue/30'
+                    : 'border-border bg-background hover:border-kanban-board-circle-blue/30'
                 )}
               >
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-semibold text-xs text-blue-600">
+                  <span className="font-semibold text-xs text-kanban-board-circle-blue">
                     Low Priority
                   </span>
-                  <Flag className="h-4 w-4 text-blue-500" />
+                  <Flag className="h-4 w-4 text-kanban-board-circle-blue" />
                 </div>
                 <p className="text-muted-foreground text-xs">
                   Routine, nice-to-have, or non-time-critical maintenance work.
@@ -537,7 +537,7 @@ export default function CreateAssessment() {
                           : 'border-border bg-background hover:bg-muted/40'
                       )}
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-white text-xs font-semibold">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
                         {member.name
                           .split(' ')
                           .map((n) => n[0])
@@ -563,8 +563,8 @@ export default function CreateAssessment() {
                             className={cn(
                               'text-[10px] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5',
                               member.affiliation === 'internal'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-purple-100 text-purple-700'
+                                ? 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue'
+                                : 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple'
                             )}
                           >
                             {member.affiliation === 'internal' ? (
@@ -587,7 +587,7 @@ export default function CreateAssessment() {
               </div>
 
               {selectedAssigneeIds.length === 0 && (
-                <p className="mt-2 text-xs text-amber-600">
+                <p className="mt-2 text-xs text-kanban-board-circle-yellow">
                   Tip: No assignees selected yet. You can assign someone now or assign later from the boards.
                 </p>
               )}
@@ -607,7 +607,7 @@ export default function CreateAssessment() {
             <button
               type="button"
               onClick={() => handleSubmit('priority')}
-              className="bg-amber-600 text-white hover:bg-amber-700 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium shadow-sm transition-colors"
+              className="bg-kanban-board-circle-yellow text-primary-foreground hover:bg-kanban-board-circle-yellow/90 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium shadow-sm transition-colors"
             >
               <Flag className="h-3.5 w-3.5" />
               Save & View on Impact Board

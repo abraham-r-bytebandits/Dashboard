@@ -5,7 +5,6 @@ import {
   setWorkItems,
   setTeamDirectory,
   moveWorkItem,
-  persistWorkState,
 } from '@/store/workSlice'
 import type { WorkStatus, Priority, WorkItem, Assignee } from '@/types/work'
 import { workService } from '@/services/workService'
@@ -65,10 +64,7 @@ export function useWorkBoardData(mode: BoardMode) {
   const activeItems = workItems.length > 0 ? workItems : apiWorkItems
   const activeDirectory = teamDirectory.length > 0 ? teamDirectory : apiUsers
 
-  // Persist state to localStorage on updates
-  useEffect(() => {
-    persistWorkState(workState)
-  }, [workState])
+  // Persistence now handled centrally by store.subscribe() in src/store/index.ts
 
   // Filter items based on board mode
   const filteredItems = activeItems.filter((item: WorkItem) => {

@@ -65,7 +65,7 @@ export function WorkToolbar({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <LayoutGrid className="h-3.5 w-3.5 text-blue-500" />
+            <LayoutGrid className="h-3.5 w-3.5 text-kanban-board-circle-blue" />
             Status Board
           </button>
           <button
@@ -77,7 +77,7 @@ export function WorkToolbar({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Zap className="h-3.5 w-3.5 text-amber-500" />
+            <Zap className="h-3.5 w-3.5 text-kanban-board-circle-yellow" />
             Impact Board
           </button>
         </div>

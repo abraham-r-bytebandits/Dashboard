@@ -107,16 +107,3 @@ export const {
 } = workSlice.actions
 
 export default workSlice.reducer
-
-// Persist to localStorage on state changes
-export const persistWorkState = (state: WorkState) => {
-  try {
-    const toStore = {
-      workItems: state.workItems,
-      teamDirectory: state.teamDirectory,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
-  } catch {
-    // Storage full or unavailable — state simply won't persist across reloads.
-  }
-}

@@ -27,7 +27,7 @@ export default function ImpactBoard() {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="text-muted-foreground flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-kanban-board-circle-yellow border-t-transparent" />
           <span>Loading Impact Board...</span>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function ImpactBoard() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-kanban-board-circle-yellow text-primary-foreground shadow-sm">
                 <Zap className="h-4 w-4" />
               </div>
               <h1 className="text-foreground text-2xl font-bold tracking-tight">
@@ -60,7 +60,7 @@ export default function ImpactBoard() {
                 {activeDirectory.slice(0, 6).map((member: Assignee) => (
                   <div
                     key={member.id}
-                    className="bg-slate-700 text-white flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold shadow-sm"
+                    className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold shadow-sm"
                     title={`${member.name} (${member.role} · ${member.affiliation === 'internal' ? 'Internal' : 'External'})`}
                   >
                     {member.name
