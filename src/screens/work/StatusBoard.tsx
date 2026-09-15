@@ -1,131 +1,29 @@
-import { useEffect } from 'react'
 import { Plus, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { useAppDispatch } from '@/hooks/redux'
 import {
-  setWorkItems,
-  setTeamDirectory,
-  moveWorkItem,
   setSearchQuery,
   setPriorityFilter,
   setRoleFilter,
   setAffiliationFilter,
-  persistWorkState,
 } from '@/store/workSlice'
-import type { WorkStatus, Priority, WorkItem, Assignee } from '@/types/work'
+import type { Assignee } from '@/types/work'
 import { useJsLoaded } from '@/hooks/use-js-loaded'
 import { KanbanBoard } from './_components/KanbanBoard'
 import { WorkToolbar } from './_components/WorkToolbar'
-import { workService } from '@/services/workService'
-import { apiClient } from '@/lib/apiClient'
-import { queryClient } from '@/lib/queryClient'
+import { useWorkBoardData } from './hooks/useWorkBoardData'
 
 export default function StatusBoard() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const jsLoaded = useJsLoaded()
 
-  // 1. Fetch work items from API
-  const { data: apiWorkItems = [], isLoading: isWorksLoading } = useQuery<WorkItem[]>({
-    queryKey: ['work-items'],
-    queryFn: () => workService.getWorkItems(),
-  })
+  const { filteredItems, activeDirectory, isLoading, handleMoveItem, filters } =
+    useWorkBoardData('status')
 
-  // 2. Fetch users/team members from API
-  const { data: apiUsers = [] } = useQuery<Assignee[]>({
-    queryKey: ['team-directory-users'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.get('/admin/users?page=1&pageSize=100')
-        const users = res.data?.data || res.data || []
-        return (Array.isArray(users) ? users : []).map((u: any): Assignee => ({
-          id: u.publicId || u.id,
-          name: u.username || u.email,
-          avatar: u.profile?.profileImage || '',
-          role: u.functionalRole || 'Member',
-          affiliation: (String(u.affiliation).toLowerCase() === 'external' ? 'external' : 'internal'),
-          email: u.email,
-        }))
-      } catch {
-        return []
-      }
-    },
-  })
+  const { searchQuery, priorityFilter, roleFilter, affiliationFilter } = filters
 
-  // Synchronize API data to Redux for optimistic drag-and-drop
-  useEffect(() => {
-    if (apiWorkItems.length > 0) {
-      dispatch(setWorkItems(apiWorkItems))
-    }
-  }, [apiWorkItems, dispatch])
-
-  useEffect(() => {
-    if (apiUsers.length > 0) {
-      dispatch(setTeamDirectory(apiUsers))
-    }
-  }, [apiUsers, dispatch])
-
-  const workState = useAppSelector((state) => state.work)
-  const {
-    workItems,
-    teamDirectory,
-    searchQuery,
-    priorityFilter,
-    roleFilter,
-    affiliationFilter,
-  } = workState
-
-  const activeItems = workItems.length > 0 ? workItems : apiWorkItems
-  const activeDirectory = teamDirectory.length > 0 ? teamDirectory : apiUsers
-
-  // Persist state to localStorage on updates
-  useEffect(() => {
-    persistWorkState(workState)
-  }, [workState])
-
-  // Filter items for the Status Board
-  const filteredItems = activeItems.filter((item: WorkItem) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
-
-    const matchesPriority =
-      priorityFilter === 'all' || item.priority === priorityFilter
-
-    const matchesRole =
-      roleFilter === 'all' ||
-      item.assignees.some((assignee) => assignee.role === roleFilter)
-
-    const matchesAffiliation =
-      affiliationFilter === 'all' ||
-      item.assignees.some((assignee) => assignee.affiliation === affiliationFilter)
-
-    return matchesSearch && matchesPriority && matchesRole && matchesAffiliation
-  })
-
-  const handleMoveItem = async (
-    itemId: string,
-    newStatus?: WorkStatus,
-    newPriority?: Priority
-  ) => {
-    dispatch(
-      moveWorkItem({
-        id: itemId,
-        status: newStatus,
-        priority: newPriority,
-      })
-    )
-    if (newStatus) {
-      await workService.updateWorkItemStatus(itemId, newStatus)
-    }
-    if (newPriority) {
-      await workService.updateWorkItemPriority(itemId, newPriority)
-    }
-    queryClient.invalidateQueries({ queryKey: ['work-items'] })
-  }
-
-  if (!jsLoaded || isWorksLoading) {
+  if (!jsLoaded || isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="text-muted-foreground flex items-center gap-2">

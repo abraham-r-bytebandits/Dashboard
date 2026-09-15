@@ -17,10 +17,11 @@ import { message } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useAppDispatch } from '@/hooks/redux'
 import { addWorkItem, addTeamMember } from '@/store/workSlice'
-import { roleService } from '@/services/roleService'
+import { roleService, mapApiUserToAssignee } from '@/services/roleService'
 import { workService } from '@/services/workService'
 import { apiClient } from '@/lib/apiClient'
 import { queryClient } from '@/lib/queryClient'
+import { WORK_STATUS_OPTIONS_WITH_DESC } from '@/data/options'
 import type {
   Priority,
   WorkStatus,
@@ -29,26 +30,6 @@ import type {
   WorkItem,
 } from '@/types/work'
 import { cn } from '@/lib/utils'
-
-const STATUS_OPTIONS: { value: WorkStatus; label: string; desc: string }[] = [
-  { value: 'new', label: 'New', desc: 'Newly created, pending review' },
-  { value: 'todo', label: 'To do', desc: 'Scheduled and ready to start' },
-  {
-    value: 'clarifications',
-    label: 'Clarifications / Doubts',
-    desc: 'Requires stakeholder or client feedback',
-  },
-  {
-    value: 'under_analysis',
-    label: 'Under analysis',
-    desc: 'Work actively in-progress or investigation',
-  },
-  {
-    value: 'approval',
-    label: 'Approval',
-    desc: 'Final review or sign-off stage',
-  },
-]
 
 export default function CreateAssessment() {
   const navigate = useNavigate()
@@ -70,14 +51,7 @@ export default function CreateAssessment() {
       try {
         const res = await apiClient.get('/admin/users?page=1&pageSize=100')
         const users = res.data?.data || res.data || []
-        return (Array.isArray(users) ? users : []).map((u: any): Assignee => ({
-          id: u.publicId || u.id,
-          name: u.username || u.email,
-          avatar: u.profile?.profileImage || '',
-          role: u.functionalRole || 'Member',
-          affiliation: (String(u.affiliation).toLowerCase() === 'external' ? 'external' : 'internal'),
-          email: u.email,
-        }))
+        return (Array.isArray(users) ? users : []).map(mapApiUserToAssignee)
       } catch {
         return []
       }
@@ -90,7 +64,7 @@ export default function CreateAssessment() {
   // Form State
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [dueDate, setDueDate] = useState(
+  const [dueDate, setDueDate] = useState(() =>
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   )
   const [priority, setPriority] = useState<Priority>(initialPriority)
@@ -121,9 +95,10 @@ export default function CreateAssessment() {
     }
 
     const assignedRole = newCollabRole || functionalRoles[0]?.name || 'Member'
+    const newMemberId = `usr-${crypto.randomUUID()}`
 
     const newMember: Assignee = {
-      id: `usr-${Date.now()}`,
+      id: newMemberId,
       name: newCollabName.trim(),
       role: assignedRole,
       affiliation: newCollabAffiliation,
@@ -155,8 +130,9 @@ export default function CreateAssessment() {
       selectedAssigneeIds.includes(m.id)
     )
 
+    const workItemId = `work-${crypto.randomUUID()}`
     const newWorkItem: WorkItem = {
-      id: `work-${Date.now()}`,
+      id: workItemId,
       title: title.trim(),
       description: description.trim(),
       priority,
@@ -279,7 +255,7 @@ export default function CreateAssessment() {
                     onChange={(e) => setStatus(e.target.value as WorkStatus)}
                     className="border-input focus-visible:ring-ring h-10 w-full rounded-md border bg-background px-3 text-xs outline-none transition-colors focus-visible:ring-2"
                   >
-                    {STATUS_OPTIONS.map((opt) => (
+                    {WORK_STATUS_OPTIONS_WITH_DESC.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label} — {opt.desc}
                       </option>

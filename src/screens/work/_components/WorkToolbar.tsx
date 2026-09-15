@@ -3,6 +3,11 @@ import { Select } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { roleService } from '@/services/roleService'
+import {
+  WORK_PRIORITY_FILTER_OPTIONS,
+  WORK_STATUS_FILTER_OPTIONS,
+  WORK_AFFILIATION_FILTER_OPTIONS,
+} from '@/data/options'
 import type { Priority, WorkStatus, UserRole, UserAffiliation } from '@/types/work'
 import { cn } from '@/lib/utils'
 
@@ -19,28 +24,6 @@ type WorkToolbarProps = {
   affiliationFilter: UserAffiliation | 'all'
   onAffiliationChange: (affiliation: UserAffiliation | 'all') => void
 }
-
-const PRIORITY_OPTIONS = [
-  { label: 'All Priorities', value: 'all' },
-  { label: 'High Priority', value: 'high' },
-  { label: 'Medium Priority', value: 'medium' },
-  { label: 'Low Priority', value: 'low' },
-]
-
-const STATUS_OPTIONS = [
-  { label: 'All Statuses', value: 'all' },
-  { label: 'New', value: 'new' },
-  { label: 'To do', value: 'todo' },
-  { label: 'Clarifications / Doubts', value: 'clarifications' },
-  { label: 'Under analysis', value: 'under_analysis' },
-  { label: 'Approval', value: 'approval' },
-]
-
-const AFFILIATION_OPTIONS = [
-  { label: 'All Types', value: 'all' },
-  { label: 'Internal', value: 'internal' },
-  { label: 'External', value: 'external' },
-]
 
 export function WorkToolbar({
   currentBoard,
@@ -133,7 +116,7 @@ export function WorkToolbar({
           <Select
             value={priorityFilter}
             onChange={onPriorityChange}
-            options={PRIORITY_OPTIONS}
+            options={WORK_PRIORITY_FILTER_OPTIONS}
             className="min-w-36"
             size="small"
             placeholder="Priority"
@@ -144,7 +127,7 @@ export function WorkToolbar({
           <Select
             value={statusFilter}
             onChange={onStatusChange}
-            options={STATUS_OPTIONS}
+            options={WORK_STATUS_FILTER_OPTIONS}
             className="min-w-44"
             size="small"
             placeholder="Status"
@@ -163,7 +146,7 @@ export function WorkToolbar({
         <Select
           value={affiliationFilter}
           onChange={onAffiliationChange}
-          options={AFFILIATION_OPTIONS}
+          options={WORK_AFFILIATION_FILTER_OPTIONS}
           className="min-w-36"
           size="small"
           placeholder="Affiliation"
