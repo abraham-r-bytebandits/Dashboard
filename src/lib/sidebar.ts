@@ -12,6 +12,7 @@ import {
   Image,
   Globe,
   Mail,
+  Kanban,
 } from "lucide-react"
 
 export const data = {
@@ -92,6 +93,11 @@ export const data = {
       title: "Image Converter",
       url: "/image-converter",
       icon: Image,
+    },
+    {
+      title: "Work Assignment",
+      url: "/work-assignment",
+      icon: Kanban,
     },
     {
       title: "Clients",

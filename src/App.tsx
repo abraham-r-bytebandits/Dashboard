@@ -17,6 +17,7 @@ import ClientsList from './screens/clients/ClientsList'
 import InvoicesList from './screens/invoices/InvoicesList'
 import ImageConverter from './screens/ImageConverter'
 import ContactMessagesList from './screens/admin/ContactMessagesList'
+import WorkAssignment from './screens/work/WorkAssignment'
 
 function MainArea() {
   return (
@@ -30,6 +31,7 @@ function MainArea() {
       <Route path="/clients" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ClientsList /></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><InvoicesList /></ProtectedRoute>} />
       <Route path="/image-converter" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ImageConverter /></ProtectedRoute>} />
+      <Route path="/work-assignment" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><WorkAssignment /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

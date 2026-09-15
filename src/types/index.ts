@@ -214,3 +214,6 @@ export type ApiError = {
   status?: number
   errors?: Record<string, string[]>
 }
+
+// --- Work Assignment ---
+export type { Priority, WorkStatus, UserRole as WorkUserRole, UserAffiliation, Assignee, Milestone, WorkItem } from './work'
