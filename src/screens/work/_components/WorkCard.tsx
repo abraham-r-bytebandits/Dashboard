@@ -1,151 +1,201 @@
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { MoreVertical, Paperclip, MessageSquare, Flag, Calendar, Trash2 } from 'lucide-react'
-import { format, isValid } from 'date-fns'
-import { Dropdown, type MenuProps } from 'antd'
-import type { WorkItem } from '@/types/work'
-import { cn } from '@/lib/utils'
-import { useAppDispatch } from '@/hooks/redux'
-import { deleteWorkItem, moveWorkItem } from '@/store/workSlice'
-import { workService } from '@/services/workService'
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  MoreVertical,
+  Paperclip,
+  MessageSquare,
+  Flag,
+  Calendar,
+  Trash2,
+} from "lucide-react";
+import { format, isValid } from "date-fns";
+import { Dropdown, type MenuProps } from "antd";
+import type { WorkItem } from "@/types/work";
+import { cn } from "@/lib/utils";
+import { useAppDispatch } from "@/hooks/redux";
+import { deleteWorkItem, moveWorkItem } from "@/store/workSlice";
+import { workService } from "@/services/workService";
+import { Button } from "@/components/ui/button";
 
-const DEFAULT_BADGE_CLASSNAME = 'bg-muted text-muted-foreground border-border'
+const DEFAULT_BADGE_CLASSNAME = "bg-muted text-muted-foreground border-border";
 
 type WorkCardProps = {
-  item: WorkItem
-  showStatus?: boolean
-}
+  item: WorkItem;
+  showStatus?: boolean;
+};
 
 export function WorkCard({ item, showStatus }: WorkCardProps) {
-  const dispatch = useAppDispatch()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const dispatch = useAppDispatch();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: item.id,
-  })
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
+  };
 
   const priorityConfig = {
-    high: { label: 'High', className: 'bg-kanban-board-circle-red/10 text-kanban-board-circle-red border-kanban-board-circle-red/30' },
-    medium: { label: 'Medium', className: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30' },
-    low: { label: 'Low', className: 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30' },
-  }
+    high: {
+      label: "High",
+      className:
+        "bg-kanban-board-circle-red/10 text-kanban-board-circle-red border-kanban-board-circle-red/30",
+    },
+    medium: {
+      label: "Medium",
+      className:
+        "bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30",
+    },
+    low: {
+      label: "Low",
+      className:
+        "bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30",
+    },
+  };
 
   const statusConfig = {
-    new: { label: 'New', className: 'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan border-kanban-board-circle-cyan/30' },
-    todo: { label: 'To do', className: 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30' },
-    clarifications: { label: 'Clarifications', className: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30' },
-    under_analysis: { label: 'Under analysis', className: 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple border-kanban-board-circle-purple/30' },
-    approval: { label: 'Approval', className: 'bg-kanban-board-circle-green/10 text-kanban-board-circle-green border-kanban-board-circle-green/30' },
-  }
+    new: {
+      label: "New",
+      className:
+        "bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan border-kanban-board-circle-cyan/30",
+    },
+    todo: {
+      label: "To do",
+      className:
+        "bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30",
+    },
+    clarifications: {
+      label: "Clarifications",
+      className:
+        "bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30",
+    },
+    under_analysis: {
+      label: "Under analysis",
+      className:
+        "bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple border-kanban-board-circle-purple/30",
+    },
+    approval: {
+      label: "Approval",
+      className:
+        "bg-kanban-board-circle-green/10 text-kanban-board-circle-green border-kanban-board-circle-green/30",
+    },
+  };
 
   const roleColors: Record<string, string> = {
-    Developer: 'bg-kanban-board-circle-indigo/10 text-kanban-board-circle-indigo',
-    Marketing: 'bg-kanban-board-circle-pink/10 text-kanban-board-circle-pink',
-    Design: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow',
-    Product: 'bg-kanban-board-circle-violet/10 text-kanban-board-circle-violet',
-    QA: 'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan',
-    Operations: 'bg-kanban-board-circle-gray/10 text-kanban-board-circle-gray',
-  }
+    Developer:
+      "bg-kanban-board-circle-indigo/10 text-kanban-board-circle-indigo",
+    Marketing: "bg-kanban-board-circle-pink/10 text-kanban-board-circle-pink",
+    Design: "bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow",
+    Product: "bg-kanban-board-circle-violet/10 text-kanban-board-circle-violet",
+    QA: "bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan",
+    Operations: "bg-kanban-board-circle-gray/10 text-kanban-board-circle-gray",
+  };
 
-  const dueDate = new Date(item.dueDate)
-  const dueDateLabel = isValid(dueDate) ? format(dueDate, 'dd MMM, yyyy') : 'No due date'
+  const dueDate = new Date(item.dueDate);
+  const dueDateLabel = isValid(dueDate)
+    ? format(dueDate, "dd MMM, yyyy")
+    : "No due date";
 
-  const menuItems: MenuProps['items'] = [
+  const menuItems: MenuProps["items"] = [
     {
-      key: 'priority-group',
-      label: 'Set Priority',
+      key: "priority-group",
+      label: "Set Priority",
       children: [
         {
-          key: 'p-high',
-          label: 'High Priority',
+          key: "p-high",
+          label: "High Priority",
           onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'high')
-            dispatch(moveWorkItem({ id: item.id, priority: 'high' }))
+            workService.updateWorkItemPriority(item.id, "high");
+            dispatch(moveWorkItem({ id: item.id, priority: "high" }));
           },
         },
         {
-          key: 'p-medium',
-          label: 'Medium Priority',
+          key: "p-medium",
+          label: "Medium Priority",
           onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'medium')
-            dispatch(moveWorkItem({ id: item.id, priority: 'medium' }))
+            workService.updateWorkItemPriority(item.id, "medium");
+            dispatch(moveWorkItem({ id: item.id, priority: "medium" }));
           },
         },
         {
-          key: 'p-low',
-          label: 'Low Priority',
+          key: "p-low",
+          label: "Low Priority",
           onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'low')
-            dispatch(moveWorkItem({ id: item.id, priority: 'low' }))
+            workService.updateWorkItemPriority(item.id, "low");
+            dispatch(moveWorkItem({ id: item.id, priority: "low" }));
           },
         },
       ],
     },
     {
-      key: 'status-group',
-      label: 'Move Status',
+      key: "status-group",
+      label: "Move Status",
       children: [
         {
-          key: 's-new',
-          label: 'New',
+          key: "s-new",
+          label: "New",
           onClick: () => {
-            workService.updateWorkItemStatus(item.id, 'new')
-            dispatch(moveWorkItem({ id: item.id, status: 'new' }))
+            workService.updateWorkItemStatus(item.id, "new");
+            dispatch(moveWorkItem({ id: item.id, status: "new" }));
           },
         },
         {
-          key: 's-todo',
-          label: 'To do',
+          key: "s-todo",
+          label: "To do",
           onClick: () => {
-            workService.updateWorkItemStatus(item.id, 'todo')
-            dispatch(moveWorkItem({ id: item.id, status: 'todo' }))
+            workService.updateWorkItemStatus(item.id, "todo");
+            dispatch(moveWorkItem({ id: item.id, status: "todo" }));
           },
         },
         {
-          key: 's-clarifications',
-          label: 'Clarifications / Doubts',
+          key: "s-clarifications",
+          label: "Clarifications / Doubts",
           onClick: () => {
-            workService.updateWorkItemStatus(item.id, 'clarifications')
-            dispatch(moveWorkItem({ id: item.id, status: 'clarifications' }))
+            workService.updateWorkItemStatus(item.id, "clarifications");
+            dispatch(moveWorkItem({ id: item.id, status: "clarifications" }));
           },
         },
         {
-          key: 's-under_analysis',
-          label: 'Under analysis',
+          key: "s-under_analysis",
+          label: "Under analysis",
           onClick: () => {
-            workService.updateWorkItemStatus(item.id, 'under_analysis')
-            dispatch(moveWorkItem({ id: item.id, status: 'under_analysis' }))
+            workService.updateWorkItemStatus(item.id, "under_analysis");
+            dispatch(moveWorkItem({ id: item.id, status: "under_analysis" }));
           },
         },
         {
-          key: 's-approval',
-          label: 'Approval',
+          key: "s-approval",
+          label: "Approval",
           onClick: () => {
-            workService.updateWorkItemStatus(item.id, 'approval')
-            dispatch(moveWorkItem({ id: item.id, status: 'approval' }))
+            workService.updateWorkItemStatus(item.id, "approval");
+            dispatch(moveWorkItem({ id: item.id, status: "approval" }));
           },
         },
       ],
     },
     {
-      type: 'divider',
+      type: "divider",
     },
     {
-      key: 'delete',
+      key: "delete",
       danger: true,
       icon: <Trash2 className="h-3.5 w-3.5" />,
-      label: 'Delete Work Item',
+      label: "Delete Work Item",
       onClick: () => {
-        workService.deleteWorkItem(item.id)
-        dispatch(deleteWorkItem(item.id))
+        workService.deleteWorkItem(item.id);
+        dispatch(deleteWorkItem(item.id));
       },
     },
-  ]
+  ];
 
-  const totalMilestones = Math.max(1, Math.min(12, item.milestone.total || 1))
+  const totalMilestones = Math.max(1, Math.min(12, item.milestone.total || 1));
 
   return (
     <div
@@ -154,8 +204,8 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
       {...attributes}
       {...listeners}
       className={cn(
-        'bg-card border-border rounded-xl border p-4 shadow-sm transition-all hover:shadow-md cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50 ring-2 ring-primary'
+        "bg-card border-border rounded-xl border p-4 shadow-sm transition-all hover:shadow-md cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 ring-2 ring-primary",
       )}
     >
       {/* Due Date & Action Menu */}
@@ -169,13 +219,19 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <button
+          <Dropdown
+            menu={{ items: menuItems }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <Button
               type="button"
-              className="text-muted-foreground hover:text-foreground -mr-1.5 -mt-1 p-1.5 rounded-md hover:bg-muted transition-colors"
+              variant="ghost"
+              size="icon-xs"
+              className="-mr-1.5 -mt-1"
             >
               <MoreVertical className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </Dropdown>
         </div>
       </div>
@@ -191,9 +247,7 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
       {/* Segmented Milestone Progress Bar matching screenshot */}
       <div className="mb-3">
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground font-medium">
-            Milestone
-          </span>
+          <span className="text-muted-foreground font-medium">Milestone</span>
           <span className="text-muted-foreground font-semibold">
             {item.milestone.completed}/{item.milestone.total}
           </span>
@@ -201,16 +255,16 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
 
         <div className="flex items-center gap-1">
           {Array.from({ length: totalMilestones }).map((_, idx) => {
-            const isCompleted = idx < item.milestone.completed
+            const isCompleted = idx < item.milestone.completed;
             return (
               <div
                 key={idx}
                 className={cn(
-                  'h-1.5 flex-1 rounded-full transition-colors',
-                  isCompleted ? 'bg-kanban-board-circle-green' : 'bg-muted'
+                  "h-1.5 flex-1 rounded-full transition-colors",
+                  isCompleted ? "bg-kanban-board-circle-green" : "bg-muted",
                 )}
               />
-            )
+            );
           })}
         </div>
       </div>
@@ -229,12 +283,12 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
                 <div
                   key={assignee.id}
                   className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full border border-background text-[10px] font-medium shadow-xs"
-                  title={`${assignee.name} — ${assignee.role} (${assignee.affiliation === 'internal' ? 'Internal' : 'External'})`}
+                  title={`${assignee.name} — ${assignee.role} (${assignee.affiliation === "internal" ? "Internal" : "External"})`}
                 >
                   {assignee.name
-                    .split(' ')
+                    .split(" ")
                     .map((n) => n[0])
-                    .join('')}
+                    .join("")}
                 </div>
               ))}
             </div>
@@ -245,12 +299,13 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
                 <span
                   key={assignee.id}
                   className={cn(
-                    'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium',
-                    roleColors[assignee.role] ?? DEFAULT_BADGE_CLASSNAME
+                    "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    roleColors[assignee.role] ?? DEFAULT_BADGE_CLASSNAME,
                   )}
-                  title={`${assignee.name} (${assignee.role} · ${assignee.affiliation === 'internal' ? 'Internal' : 'External'})`}
+                  title={`${assignee.name} (${assignee.role} · ${assignee.affiliation === "internal" ? "Internal" : "External"})`}
                 >
-                  {assignee.role} · {assignee.affiliation === 'internal' ? 'Int' : 'Ext'}
+                  {assignee.role} ·{" "}
+                  {assignee.affiliation === "internal" ? "Int" : "Ext"}
                 </span>
               ))}
               {item.assignees.length > 2 && (
@@ -268,8 +323,9 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
         <div className="flex items-center gap-1.5">
           <div
             className={cn(
-              'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
-              priorityConfig[item.priority]?.className ?? DEFAULT_BADGE_CLASSNAME
+              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold",
+              priorityConfig[item.priority]?.className ??
+                DEFAULT_BADGE_CLASSNAME,
             )}
           >
             <Flag className="h-3 w-3" />
@@ -279,8 +335,8 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
           {showStatus && (
             <div
               className={cn(
-                'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-                statusConfig[item.status]?.className ?? DEFAULT_BADGE_CLASSNAME
+                "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                statusConfig[item.status]?.className ?? DEFAULT_BADGE_CLASSNAME,
               )}
             >
               {statusConfig[item.status]?.label ?? item.status}
@@ -290,13 +346,19 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
 
         <div className="text-muted-foreground flex items-center gap-2.5 text-xs">
           {item.attachmentsCount > 0 && (
-            <span className="flex items-center gap-1" title={`${item.attachmentsCount} attachments`}>
+            <span
+              className="flex items-center gap-1"
+              title={`${item.attachmentsCount} attachments`}
+            >
               <Paperclip className="h-3 w-3" />
               {item.attachmentsCount}
             </span>
           )}
           {item.commentsCount > 0 && (
-            <span className="flex items-center gap-1" title={`${item.commentsCount} comments`}>
+            <span
+              className="flex items-center gap-1"
+              title={`${item.commentsCount} comments`}
+            >
               <MessageSquare className="h-3 w-3" />
               {item.commentsCount}
             </span>
@@ -304,5 +366,5 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

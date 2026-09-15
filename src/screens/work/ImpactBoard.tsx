@@ -1,27 +1,28 @@
-import { Plus, Zap } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useAppDispatch } from '@/hooks/redux'
+import { Plus, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "@/hooks/redux";
 import {
   setSearchQuery,
   setStatusFilter,
   setRoleFilter,
   setAffiliationFilter,
-} from '@/store/workSlice'
-import type { Assignee } from '@/types/work'
-import { useJsLoaded } from '@/hooks/use-js-loaded'
-import { KanbanBoard } from './_components/KanbanBoard'
-import { WorkToolbar } from './_components/WorkToolbar'
-import { useWorkBoardData } from './hooks/useWorkBoardData'
+} from "@/store/workSlice";
+import type { Assignee } from "@/types/work";
+import { useJsLoaded } from "@/hooks/use-js-loaded";
+import { KanbanBoard } from "./_components/KanbanBoard";
+import { WorkToolbar } from "./_components/WorkToolbar";
+import { useWorkBoardData } from "./hooks/useWorkBoardData";
+import { Button } from "@/components/ui/button";
 
 export default function ImpactBoard() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const jsLoaded = useJsLoaded()
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const jsLoaded = useJsLoaded();
 
   const { filteredItems, activeDirectory, isLoading, handleMoveItem, filters } =
-    useWorkBoardData('priority')
+    useWorkBoardData("priority");
 
-  const { searchQuery, statusFilter, roleFilter, affiliationFilter } = filters
+  const { searchQuery, statusFilter, roleFilter, affiliationFilter } = filters;
 
   if (!jsLoaded || isLoading) {
     return (
@@ -31,7 +32,7 @@ export default function ImpactBoard() {
           <span>Loading Impact Board...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -49,7 +50,8 @@ export default function ImpactBoard() {
               </h1>
             </div>
             <p className="text-muted-foreground text-xs mt-1">
-              Calibrate and re-prioritize work impact across High, Medium, and Low priorities.
+              Calibrate and re-prioritize work impact across High, Medium, and
+              Low priorities.
             </p>
           </div>
 
@@ -61,24 +63,26 @@ export default function ImpactBoard() {
                   <div
                     key={member.id}
                     className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold shadow-sm"
-                    title={`${member.name} (${member.role} · ${member.affiliation === 'internal' ? 'Internal' : 'External'})`}
+                    title={`${member.name} (${member.role} · ${member.affiliation === "internal" ? "Internal" : "External"})`}
                   >
                     {member.name
-                      .split(' ')
+                      .split(" ")
                       .map((n) => n[0])
-                      .join('')}
+                      .join("")}
                   </div>
                 ))}
               </div>
             )}
 
-            <button
-              onClick={() => navigate('/work/create')}
-              className="border-border hover:bg-muted text-foreground inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium transition-colors"
+            <Button
+              onClick={() => navigate("/work/create")}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               Invite
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -103,5 +107,5 @@ export default function ImpactBoard() {
         />
       </div>
     </div>
-  )
+  );
 }

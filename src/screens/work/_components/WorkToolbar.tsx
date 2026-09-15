@@ -1,54 +1,60 @@
-import { Search, Plus, Filter, LayoutGrid, Zap } from 'lucide-react'
-import { Select } from 'antd'
-import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { roleService } from '@/services/roleService'
+import { Search, Plus, Filter, LayoutGrid, Zap } from "lucide-react";
+import { Select } from "antd";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { roleService } from "@/services/roleService";
 import {
   WORK_PRIORITY_FILTER_OPTIONS,
   WORK_STATUS_FILTER_OPTIONS,
   WORK_AFFILIATION_FILTER_OPTIONS,
-} from '@/data/options'
-import type { Priority, WorkStatus, UserRole, UserAffiliation } from '@/types/work'
-import { cn } from '@/lib/utils'
+} from "@/data/options";
+import type {
+  Priority,
+  WorkStatus,
+  UserRole,
+  UserAffiliation,
+} from "@/types/work";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type WorkToolbarProps = {
-  currentBoard: 'status' | 'priority'
-  searchQuery: string
-  onSearchChange: (query: string) => void
-  priorityFilter?: Priority | 'all'
-  onPriorityChange?: (priority: Priority | 'all') => void
-  statusFilter?: WorkStatus | 'all'
-  onStatusChange?: (status: WorkStatus | 'all') => void
-  roleFilter: UserRole | 'all'
-  onRoleChange: (role: UserRole | 'all') => void
-  affiliationFilter: UserAffiliation | 'all'
-  onAffiliationChange: (affiliation: UserAffiliation | 'all') => void
-}
+  currentBoard: "status" | "priority";
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  priorityFilter?: Priority | "all";
+  onPriorityChange?: (priority: Priority | "all") => void;
+  statusFilter?: WorkStatus | "all";
+  onStatusChange?: (status: WorkStatus | "all") => void;
+  roleFilter: UserRole | "all";
+  onRoleChange: (role: UserRole | "all") => void;
+  affiliationFilter: UserAffiliation | "all";
+  onAffiliationChange: (affiliation: UserAffiliation | "all") => void;
+};
 
 export function WorkToolbar({
   currentBoard,
   searchQuery,
   onSearchChange,
-  priorityFilter = 'all',
+  priorityFilter = "all",
   onPriorityChange,
-  statusFilter = 'all',
+  statusFilter = "all",
   onStatusChange,
   roleFilter,
   onRoleChange,
   affiliationFilter,
   onAffiliationChange,
 }: WorkToolbarProps) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { data: functionalRoles = [] } = useQuery({
-    queryKey: ['functional-roles'],
+    queryKey: ["functional-roles"],
     queryFn: roleService.getFunctionalRoles,
-  })
+  });
 
   const roleOptions = [
-    { label: 'All Roles', value: 'all' },
+    { label: "All Roles", value: "all" },
     ...functionalRoles.map((r) => ({ label: r.name, value: r.name })),
-  ]
+  ];
 
   return (
     <div className="bg-card border-border mb-6 rounded-xl border p-4 shadow-sm">
@@ -56,30 +62,34 @@ export function WorkToolbar({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         {/* Board Switcher Pills */}
         <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
-          <button
-            onClick={() => navigate('/work/status-board')}
+          <Button
+            onClick={() => navigate("/work/status-board")}
+            variant="ghost"
+            size="sm"
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
-              currentBoard === 'status'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              "gap-2 text-xs font-semibold",
+              currentBoard === "status"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <LayoutGrid className="h-3.5 w-3.5 text-kanban-board-circle-blue" />
             Status Board
-          </button>
-          <button
-            onClick={() => navigate('/work/impact-board')}
+          </Button>
+          <Button
+            onClick={() => navigate("/work/impact-board")}
+            variant="ghost"
+            size="sm"
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
-              currentBoard === 'priority'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              "gap-2 text-xs font-semibold",
+              currentBoard === "priority"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Zap className="h-3.5 w-3.5 text-kanban-board-circle-yellow" />
             Impact Board
-          </button>
+          </Button>
         </div>
 
         {/* Search & Create Button */}
@@ -95,13 +105,15 @@ export function WorkToolbar({
             />
           </div>
 
-          <button
-            onClick={() => navigate('/work/create')}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-medium transition-colors shadow-sm shrink-0"
+          <Button
+            onClick={() => navigate("/work/create")}
+            variant="default"
+            size="sm"
+            className="gap-1.5 text-xs shrink-0"
           >
             <Plus className="h-4 w-4" />
             Create Assessment
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -112,7 +124,7 @@ export function WorkToolbar({
           <span>Filters:</span>
         </div>
 
-        {currentBoard === 'status' && onPriorityChange && (
+        {currentBoard === "status" && onPriorityChange && (
           <Select
             value={priorityFilter}
             onChange={onPriorityChange}
@@ -123,7 +135,7 @@ export function WorkToolbar({
           />
         )}
 
-        {currentBoard === 'priority' && onStatusChange && (
+        {currentBoard === "priority" && onStatusChange && (
           <Select
             value={statusFilter}
             onChange={onStatusChange}
@@ -152,25 +164,27 @@ export function WorkToolbar({
           placeholder="Affiliation"
         />
 
-        {(priorityFilter !== 'all' ||
-          statusFilter !== 'all' ||
-          roleFilter !== 'all' ||
-          affiliationFilter !== 'all' ||
+        {(priorityFilter !== "all" ||
+          statusFilter !== "all" ||
+          roleFilter !== "all" ||
+          affiliationFilter !== "all" ||
           searchQuery.length > 0) && (
-          <button
+          <Button
             onClick={() => {
-              onSearchChange('')
-              onRoleChange('all')
-              onAffiliationChange('all')
-              if (onPriorityChange) onPriorityChange('all')
-              if (onStatusChange) onStatusChange('all')
+              onSearchChange("");
+              onRoleChange("all");
+              onAffiliationChange("all");
+              if (onPriorityChange) onPriorityChange("all");
+              if (onStatusChange) onStatusChange("all");
             }}
-            className="text-xs text-muted-foreground hover:text-foreground underline ml-auto"
+            variant="ghost"
+            size="sm"
+            className="text-xs underline ml-auto"
           >
             Reset filters
-          </button>
+          </Button>
         )}
       </div>
     </div>
-  )
+  );
 }
