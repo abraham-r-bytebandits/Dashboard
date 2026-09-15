@@ -104,7 +104,7 @@ const Row = ({ children, ...props }: RowProps) => {
                         children: (
                             <HolderOutlined
                                 ref={setActivatorNodeRef}
-                                style={{ touchAction: 'none', cursor: 'grab' }}
+                                className="touch-none cursor-grab"
                                 {...listeners}
                             />
                         ),
@@ -324,7 +324,7 @@ export default function SiteManagement() {
     if (!isSuperAdmin) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen w-full gap-4">
-                <LockOutlined style={{ fontSize: 48, color: "#E5395A" }} />
+                <LockOutlined className="text-5xl text-[#E5395A]" />
                 <p className="text-lg font-semibold text-gray-600">
                     Access Denied — Super Admin only
                 </p>
@@ -349,7 +349,7 @@ export default function SiteManagement() {
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={openAdd}
-                    style={{ background: "#405189", borderColor: "#405189" }}
+                    className="!bg-[#405189] !border-[#405189]"
                 >
                     Add Site
                 </Button>

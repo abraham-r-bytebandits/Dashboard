@@ -147,8 +147,7 @@ const ImageConverter: React.FC = () => {
         {/* Compression Stats Banner - appears after conversion */}
         {stats && (
           <div
-            className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 rounded-2xl shadow-lg p-6 sm:p-8 text-white"
-            style={{ animation: 'fadeSlideUp 0.5s ease-out' }}
+            className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 rounded-2xl shadow-lg p-6 sm:p-8 text-white animate-[fadeSlideUp_0.5s_ease-out]"
           >
             <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
               {/* Circular Progress */}
@@ -253,11 +252,10 @@ const ImageConverter: React.FC = () => {
               <Button
                 type="primary"
                 size="large"
-                className="w-full h-14 rounded-xl text-base font-semibold shadow-md hover:shadow-lg transition-all"
+                className="w-full h-14 rounded-xl text-base font-semibold shadow-md hover:shadow-lg transition-all not-disabled:bg-primary"
                 onClick={handleConvert}
                 disabled={fileList.length === 0 || isLoading}
                 loading={isLoading}
-                style={{ backgroundColor: fileList.length === 0 ? undefined : 'hsl(var(--primary))' }}
               >
                 {isLoading ? 'Converting to WebP...' : 'Convert Image Now'}
               </Button>
@@ -300,7 +298,7 @@ const ImageConverter: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-between flex-1" style={{ animation: 'fadeSlideUp 0.4s ease-out' }}>
+              <div className="flex flex-col items-center justify-between flex-1 animate-[fadeSlideUp_0.4s_ease-out]">
                 <div className="relative group w-full bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-center min-h-[200px]">
                   <Image
                     src={convertedImageUrl}
@@ -345,19 +343,6 @@ const ImageConverter: React.FC = () => {
           </Card>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
