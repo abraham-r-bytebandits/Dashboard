@@ -1,12 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { WorkItem, Assignee, Priority, WorkStatus, UserRole, UserAffiliation } from '@/types/work'
-import { MOCK_WORK_ITEMS, TEAM_DIRECTORY } from '@/data/mockWorks'
 
 type WorkState = {
   workItems: WorkItem[]
   teamDirectory: Assignee[]
   searchQuery: string
   priorityFilter: Priority | 'all'
+  statusFilter: WorkStatus | 'all'
   roleFilter: UserRole | 'all'
   affiliationFilter: UserAffiliation | 'all'
 }
@@ -20,7 +20,7 @@ const loadFromStorage = (): Partial<WorkState> => {
       return JSON.parse(stored)
     }
   } catch {
-    // Corrupt or inaccessible localStorage — fall back to mock defaults below.
+    // Corrupt or inaccessible localStorage
   }
   return {}
 }
@@ -28,10 +28,11 @@ const loadFromStorage = (): Partial<WorkState> => {
 const initialStoredState = loadFromStorage()
 
 const initialState: WorkState = {
-  workItems: initialStoredState.workItems || MOCK_WORK_ITEMS,
-  teamDirectory: initialStoredState.teamDirectory || TEAM_DIRECTORY,
+  workItems: Array.isArray(initialStoredState.workItems) ? initialStoredState.workItems : [],
+  teamDirectory: Array.isArray(initialStoredState.teamDirectory) ? initialStoredState.teamDirectory : [],
   searchQuery: '',
   priorityFilter: 'all',
+  statusFilter: 'all',
   roleFilter: 'all',
   affiliationFilter: 'all',
 }
@@ -40,6 +41,12 @@ const workSlice = createSlice({
   name: 'work',
   initialState,
   reducers: {
+    setWorkItems: (state, action: PayloadAction<WorkItem[]>) => {
+      state.workItems = action.payload
+    },
+    setTeamDirectory: (state, action: PayloadAction<Assignee[]>) => {
+      state.teamDirectory = action.payload
+    },
     addWorkItem: (state, action: PayloadAction<WorkItem>) => {
       state.workItems.push(action.payload)
     },
@@ -72,6 +79,9 @@ const workSlice = createSlice({
     setPriorityFilter: (state, action: PayloadAction<Priority | 'all'>) => {
       state.priorityFilter = action.payload
     },
+    setStatusFilter: (state, action: PayloadAction<WorkStatus | 'all'>) => {
+      state.statusFilter = action.payload
+    },
     setRoleFilter: (state, action: PayloadAction<UserRole | 'all'>) => {
       state.roleFilter = action.payload
     },
@@ -82,6 +92,8 @@ const workSlice = createSlice({
 })
 
 export const {
+  setWorkItems,
+  setTeamDirectory,
   addWorkItem,
   updateWorkItem,
   deleteWorkItem,
@@ -89,6 +101,7 @@ export const {
   addTeamMember,
   setSearchQuery,
   setPriorityFilter,
+  setStatusFilter,
   setRoleFilter,
   setAffiliationFilter,
 } = workSlice.actions

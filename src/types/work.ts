@@ -4,7 +4,7 @@ export type Priority = 'high' | 'medium' | 'low'
 
 export type WorkStatus = 'new' | 'todo' | 'clarifications' | 'under_analysis' | 'approval'
 
-export type UserRole = 'Developer' | 'Marketing' | 'Design' | 'Product' | 'QA' | 'Operations'
+export type UserRole = string
 
 export type UserAffiliation = 'internal' | 'external'
 

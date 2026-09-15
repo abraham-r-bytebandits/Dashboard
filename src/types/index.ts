@@ -122,6 +122,15 @@ export type MessageStatus = 'new' | 'read' | 'replied' | 'archived'
 // --- User Management ---
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER'
 
+export type FunctionalRole = {
+  id: string
+  publicId: string
+  name: string
+  description?: string
+  color?: string
+  createdAt?: string
+}
+
 export type UserListItem = {
   id: string
   publicId: string
@@ -129,6 +138,8 @@ export type UserListItem = {
   username: string
   status: string
   roles: UserRole[]
+  affiliation?: 'internal' | 'external' | 'INTERNAL' | 'EXTERNAL'
+  functionalRole?: string
   createdAt: string
   lastLoginAt?: string
 }

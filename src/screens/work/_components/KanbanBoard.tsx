@@ -8,6 +8,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { WorkItem, WorkStatus, Priority } from '@/types/work'
 import { KanbanColumn } from './KanbanColumn'
 import { WorkCard } from './WorkCard'
@@ -46,6 +47,7 @@ const PRIORITY_COLUMNS: PriorityColumn[] = [
 
 export function KanbanBoard({ mode, items, onMoveItem }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -93,6 +95,14 @@ export function KanbanBoard({ mode, items, onMoveItem }: KanbanBoardProps) {
     }
   }
 
+  const handleAddTaskForColumn = (columnId: string) => {
+    if (mode === 'status') {
+      navigate(`/work/create?status=${columnId}`)
+    } else {
+      navigate(`/work/create?priority=${columnId}`)
+    }
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -108,6 +118,7 @@ export function KanbanBoard({ mode, items, onMoveItem }: KanbanBoardProps) {
             items={getColumnItems(column.id)}
             color={column.color}
             showStatus={mode === 'priority'}
+            onAddTask={() => handleAddTaskForColumn(column.id)}
           />
         ))}
       </div>

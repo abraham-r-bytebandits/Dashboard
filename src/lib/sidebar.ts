@@ -95,9 +95,23 @@ export const data = {
       icon: Image,
     },
     {
-      title: "Work Assignment",
-      url: "/work-assignment",
+      title: "Work & Priorities",
+      url: "#",
       icon: Kanban,
+      items: [
+        {
+          title: "Status Board",
+          url: "/work/status-board",
+        },
+        {
+          title: "Impact Board",
+          url: "/work/impact-board",
+        },
+        {
+          title: "Create Assessment",
+          url: "/work/create",
+        },
+      ],
     },
     {
       title: "Clients",

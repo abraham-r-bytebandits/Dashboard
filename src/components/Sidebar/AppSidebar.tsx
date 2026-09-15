@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 <Collapsible
                                     key={item.title}
                                     asChild
-                                    defaultOpen={item.isActive}
+                                    defaultOpen={item.isActive || item.items?.some((sub: NavSubItem) => sub.url === currentRoute)}
                                     className="group/collapsible"
                                 >
                                     <SidebarMenuItem className="gap-3">

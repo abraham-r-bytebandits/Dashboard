@@ -14,23 +14,31 @@ type KanbanColumnProps = {
   onAddTask?: () => void
 }
 
-export function KanbanColumn({ id, title, items, color, showStatus, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({
+  id,
+  title,
+  items,
+  color,
+  showStatus,
+  onAddTask,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
-    <div className="flex min-w-80 flex-col">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="flex min-w-[320px] max-w-[340px] flex-1 flex-col">
+      <div className="mb-3 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <div className={cn('h-3 w-3 rounded-full', color)} />
-          <h3 className="text-foreground text-sm font-semibold">{title}</h3>
-          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+          <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-background ring-border', color)} />
+          <h3 className="text-foreground text-sm font-bold tracking-tight">{title}</h3>
+          <span className="bg-muted/80 text-muted-foreground rounded-full px-2 py-0.5 text-xs font-semibold">
             {items.length}
           </span>
         </div>
         {onAddTask && (
           <button
             onClick={onAddTask}
-            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-md p-1 transition-colors"
+            title={`Add new assessment to ${title}`}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md p-1 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -40,15 +48,26 @@ export function KanbanColumn({ id, title, items, color, showStatus, onAddTask }:
       <div
         ref={setNodeRef}
         className={cn(
-          'bg-muted/30 flex-1 space-y-3 rounded-lg p-3',
-          isOver && 'bg-muted/50 ring-primary ring-2'
+          'bg-muted/20 flex-1 space-y-3 rounded-xl p-3 border border-border/40 min-h-[500px] transition-colors',
+          isOver && 'bg-primary/5 ring-2 ring-primary/40 border-primary/40'
         )}
       >
-        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={items.map((i) => i.id)}
+          strategy={verticalListSortingStrategy}
+        >
           {items.map((item) => (
             <WorkCard key={item.id} item={item} showStatus={showStatus} />
           ))}
         </SortableContext>
+
+        {items.length === 0 && (
+          <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border/60 p-4 text-center">
+            <span className="text-muted-foreground text-xs font-medium">
+              No tasks in this column
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
