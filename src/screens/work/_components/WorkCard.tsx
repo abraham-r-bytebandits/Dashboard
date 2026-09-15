@@ -1,9 +1,11 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { MoreVertical, Paperclip, MessageSquare, Flag, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, isValid } from 'date-fns'
 import type { WorkItem } from '@/types/work'
 import { cn } from '@/lib/utils'
+
+const DEFAULT_BADGE_CLASSNAME = 'bg-muted text-muted-foreground border-border'
 
 type WorkCardProps = {
   item: WorkItem
@@ -43,7 +45,12 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
     Operations: 'bg-gray-100 text-gray-700',
   }
 
-  const milestonePercentage = (item.milestone.completed / item.milestone.total) * 100
+  const milestonePercentage = item.milestone.total > 0
+    ? (item.milestone.completed / item.milestone.total) * 100
+    : 0
+
+  const dueDate = new Date(item.dueDate)
+  const dueDateLabel = isValid(dueDate) ? format(dueDate, 'dd MMM, yyyy') : 'No due date'
 
   return (
     <div
@@ -59,7 +66,7 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
       <div className="mb-3 flex items-start justify-between">
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
           <Calendar className="h-3 w-3" />
-          <span>Due: {format(new Date(item.dueDate), 'dd MMM, yyyy')}</span>
+          <span>Due: {dueDateLabel}</span>
         </div>
         <button
           className="text-muted-foreground hover:text-foreground -mr-2 -mt-2 p-2"
@@ -106,7 +113,7 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
                 key={assignee.id}
                 className={cn(
                   'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                  roleColors[assignee.role]
+                  roleColors[assignee.role] ?? DEFAULT_BADGE_CLASSNAME
                 )}
               >
                 {assignee.role} · {assignee.affiliation === 'internal' ? 'Internal' : 'External'}
@@ -121,20 +128,20 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
           <div
             className={cn(
               'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium',
-              priorityConfig[item.priority].className
+              priorityConfig[item.priority]?.className ?? DEFAULT_BADGE_CLASSNAME
             )}
           >
             <Flag className="h-3 w-3" />
-            {priorityConfig[item.priority].label}
+            {priorityConfig[item.priority]?.label ?? item.priority}
           </div>
           {showStatus && (
             <div
               className={cn(
                 'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium',
-                statusConfig[item.status].className
+                statusConfig[item.status]?.className ?? DEFAULT_BADGE_CLASSNAME
               )}
             >
-              {statusConfig[item.status].label}
+              {statusConfig[item.status]?.label ?? item.status}
             </div>
           )}
         </div>

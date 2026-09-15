@@ -11,7 +11,7 @@ const workItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   priority: z.enum(['high', 'medium', 'low']),
   status: z.enum(['new', 'todo', 'clarifications', 'under_analysis', 'approval']),
-  dueDate: z.string(),
+  dueDate: z.string().min(1, 'Due date is required'),
   assignees: z.array(z.string()),
   milestoneCompleted: z.number().min(0),
   milestoneTotal: z.number().min(1),
@@ -152,9 +152,11 @@ export function WorkModal({ open, onClose, onSubmit, initialData, teamDirectory 
                 onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
                 className="w-full"
                 format="YYYY-MM-DD"
+                status={errors.dueDate ? 'error' : ''}
               />
             )}
           />
+          {errors.dueDate && <p className="text-destructive mt-1 text-xs">{errors.dueDate.message}</p>}
         </div>
 
         <div>
