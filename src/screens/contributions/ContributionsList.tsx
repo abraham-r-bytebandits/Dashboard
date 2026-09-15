@@ -1,20 +1,55 @@
-import { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, InputNumber, Select, DatePicker, message, Tag, Row, Col, Card, Statistic } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import api from "@/api/axios";
-import { useAuth } from "@/context/AuthContext";
-import dayjs from "dayjs";
+import { useEffect, useState } from "react"
+import { Table, Button, Modal, Form, Input, InputNumber, Select, DatePicker, message, Tag, Row, Col, Card, Statistic } from "antd"
+import { PlusOutlined } from "@ant-design/icons"
+import api from "@/api/axios"
+import { useAuth } from "@/context/AuthContext"
+import dayjs, { type Dayjs } from "dayjs"
 
-const { Option } = Select;
-const { TextArea } = Input;
+const { Option } = Select
+const { TextArea } = Input
+
+type ContributionRecord = {
+    contributorId: string
+    contributor?: unknown
+    type: string
+    amount: number
+    currency?: string
+    contributionDate?: string
+    description?: string
+}
+
+type ContributionSummary = {
+    totalContributions?: number
+    totalEquity?: number
+    totalLoans?: number
+    totalCapital?: number
+}
+
+type AdminUser = {
+    publicId: string
+    name?: string
+    email?: string
+    profile?: {
+        firstName: string
+        lastName: string
+    }
+}
+
+type ContributionFormValues = {
+    contributorId: string
+    type: string
+    amount: number
+    contributionDate?: Dayjs
+    description?: string
+}
 
 export default function ContributionsList() {
-    const { isAdmin, isSuperAdmin } = useAuth();
-    const canCreate = isAdmin || isSuperAdmin;
+    const { isAdmin, isSuperAdmin } = useAuth()
+    const canCreate = isAdmin || isSuperAdmin
 
-    const [contributions, setContributions] = useState<any[]>([]);
-    const [summary, setSummary] = useState<any>(null);
-    const [admins, setAdmins] = useState<any[]>([]);
+    const [contributions, setContributions] = useState<ContributionRecord[]>([])
+    const [summary, setSummary] = useState<ContributionSummary | null>(null)
+    const [admins, setAdmins] = useState<AdminUser[]>([])
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -29,47 +64,48 @@ export default function ContributionsList() {
                 api.get('/admin/users').catch(() => ({ data: [] }))
             ]);
 
-            setContributions(contribRes.data?.data || contribRes.data || []);
-            setSummary(summaryRes.data?.data || summaryRes.data || null);
-            setAdmins(adminsRes.data?.data || adminsRes.data || []);
-        } catch (error) {
-            message.error("Failed to fetch contributions");
+            setContributions(contribRes.data?.data || contribRes.data || [])
+            setSummary(summaryRes.data?.data || summaryRes.data || null)
+            setAdmins(adminsRes.data?.data || adminsRes.data || [])
+        } catch {
+            message.error("Failed to fetch contributions")
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        fetchData()
+    }, [])
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: ContributionFormValues) => {
         try {
-            setSubmitting(true);
-            const payload = { ...values };
-            if (values.contributionDate) {
-                payload.contributionDate = values.contributionDate.toISOString();
+            setSubmitting(true)
+            const payload = {
+                ...values,
+                contributionDate: values.contributionDate ? values.contributionDate.toISOString() : undefined
             }
-            await api.post('/contributions', payload);
+            await api.post('/contributions', payload)
             message.success("Contribution recorded successfully!");
             setIsModalVisible(false);
-            form.resetFields();
-            fetchData();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || "Failed to record contribution");
+            form.resetFields()
+            fetchData()
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { message?: string } } }
+            message.error(axiosError.response?.data?.message || "Failed to record contribution")
         } finally {
-            setSubmitting(false);
+            setSubmitting(false)
         }
-    };
+    }
 
     const columns = [
         {
             title: 'Contributor',
             key: 'contributor',
-            render: (_: any, record: any) => {
-                const admin = admins.find(a => a.publicId === record.contributorId) || record.contributor;
-                const name = admin?.profile ? `${admin.profile.firstName} ${admin.profile.lastName}` : (admin?.name || 'Unknown');
-                return <span className="font-medium text-gray-800">{name}</span>;
+            render: (_: unknown, record: ContributionRecord) => {
+                const admin = admins.find(a => a.publicId === record.contributorId) || record.contributor as AdminUser | undefined
+                const name = admin?.profile ? `${admin.profile.firstName} ${admin.profile.lastName}` : (admin?.name || 'Unknown')
+                return <span className="font-medium text-gray-800">{name}</span>
             }
         },
         {
@@ -87,7 +123,7 @@ export default function ContributionsList() {
         {
             title: 'Amount',
             key: 'amount',
-            render: (_: any, record: any) => (
+            render: (_: unknown, record: ContributionRecord) => (
                 <span className="font-semibold text-gray-700">
                     {record.currency || 'INR'} {record.amount?.toLocaleString()}
                 </span>

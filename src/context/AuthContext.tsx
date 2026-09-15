@@ -1,197 +1,149 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import api from "../api/axios";
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { setUser, setShowModal, setLoading } from '@/store/authSlice'
+import { apiClient } from '@/lib/apiClient'
+import type { User } from '@/types'
 
-// Define types for User Profile
-interface UserProfile {
-  id: string;
-  accountPublicId: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  profileImage?: string;
-  dateOfBirth?: string;
-  gender?: string;
+type AuthContextType = {
+  user: User | null
+  setUser: (user: User | null) => void
+  login: (identifier: string, password: string, remember: boolean) => Promise<void>
+  logout: () => Promise<void>
+  showModal: boolean
+  setShowModal: (show: boolean) => void
+  loading: boolean
+  isAdmin: boolean
+  isSuperAdmin: boolean
+  onAuthSuccess: (accessToken: string, refreshToken: string, remember: boolean) => Promise<void>
 }
 
-// Define types for User
-interface User {
-  id: string;
-  publicId: string;
-  email: string;
-  username: string;
-  status: string;
-  isEmailVerified: boolean;
-  lastLoginAt?: string;
-  createdAt: string;
-  profile: UserProfile;
-  roles: string[];
-  permissions: string[];
-  providers: string[];
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Define types for Auth context
-interface AuthContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
-  login: (identifier: string, password: string, remember: boolean) => Promise<void>;
-  logout: () => Promise<void>;
-  showModal: boolean;
-  setShowModal: (show: boolean) => void;
-  loading: boolean;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  onAuthSuccess: (accessToken: string, refreshToken: string, remember: boolean) => Promise<void>;
-}
-
-// Define types for login response
-interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-}
-
-// Create context with undefined default value
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Props type for AuthProvider
-interface AuthProviderProps {
-  children: ReactNode;
+type AuthProviderProps = {
+  children: ReactNode
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [showModal, setShowModal] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const dispatch = useAppDispatch()
+  const user = useAppSelector((state) => state.auth.user)
+  const showModal = useAppSelector((state) => state.auth.showModal)
+  const loading = useAppSelector((state) => state.auth.loading)
 
-  // Robustly determine if the user is an admin
   const isAdmin = (() => {
-    if (!user) return false;
-    const actualUser = user.data ? user.data : user;
-    const roles = Array.isArray(actualUser.roles) ? actualUser.roles : actualUser.roles ? [actualUser.roles] : [];
-    if (actualUser.role) roles.push(actualUser.role);
-
-    return roles.some((r: any) => {
-      if (typeof r === 'string') return r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'SUPER_ADMIN';
-      if (typeof r === 'object' && r.name) return r.name.toUpperCase() === 'ADMIN' || r.name.toUpperCase() === 'SUPER_ADMIN';
-      return false;
-    });
-  })();
+    if (!user) return false
+    const roles = Array.isArray(user.roles) ? user.roles : []
+    return roles.some((r) => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'SUPER_ADMIN')
+  })()
 
   const isSuperAdmin = (() => {
-    if (!user) return false;
-    const actualUser = user.data ? user.data : user;
-    const roles = Array.isArray(actualUser.roles) ? actualUser.roles : actualUser.roles ? [actualUser.roles] : [];
-    if (actualUser.role) roles.push(actualUser.role);
+    if (!user) return false
+    const roles = Array.isArray(user.roles) ? user.roles : []
+    return roles.some((r) => r.toUpperCase() === 'SUPER_ADMIN')
+  })()
 
-    return roles.some((r: any) => {
-      if (typeof r === 'string') return r.toUpperCase() === 'SUPER_ADMIN';
-      if (typeof r === 'object' && r.name) return r.name.toUpperCase() === 'SUPER_ADMIN';
-      return false;
-    });
-  })();
-
-  // Load user on app start
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       try {
-        const accessToken: string | null =
-          localStorage.getItem("accessToken") ||
-          sessionStorage.getItem("accessToken");
+        const accessToken =
+          localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 
         if (!accessToken) {
-          setShowModal(true);
-          setLoading(false);
-          return;
+          dispatch(setShowModal(true))
+          dispatch(setLoading(false))
+          return
         }
 
-        const res = await api.get<any>("/user/profile");
-        setUser(res.data?.data ? res.data.data : res.data);
-      } catch (error) {
-        localStorage.clear();
-        sessionStorage.clear();
-        setUser(null);
-        setShowModal(true);
+        const res = await apiClient.get<{ data: User }>('/user/profile')
+        const userData = res.data?.data || res.data
+        dispatch(setUser(userData as User))
+      } catch {
+        localStorage.clear()
+        sessionStorage.clear()
+        dispatch(setUser(null))
+        dispatch(setShowModal(true))
       } finally {
-        setLoading(false);
+        dispatch(setLoading(false))
       }
-    };
-
-    initAuth();
-  }, []);
-
-  const onAuthSuccess = async (accessToken: string, refreshToken: string, remember: boolean) => {
-    if (remember) {
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-    } else {
-      sessionStorage.setItem("accessToken", accessToken);
-      sessionStorage.setItem("refreshToken", refreshToken);
     }
-    const me = await api.get<any>("/user/profile");
-    setUser(me.data?.data ? me.data.data : me.data);
-    setShowModal(false);
-  };
+
+    initAuth()
+  }, [dispatch])
+
+  const onAuthSuccess = async (
+    accessToken: string,
+    refreshToken: string,
+    remember: boolean
+  ) => {
+    if (remember) {
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
+    } else {
+      sessionStorage.setItem('accessToken', accessToken)
+      sessionStorage.setItem('refreshToken', refreshToken)
+    }
+    const me = await apiClient.get<{ data: User }>('/user/profile')
+    const userData = me.data?.data || me.data
+    dispatch(setUser(userData as User))
+    dispatch(setShowModal(false))
+  }
 
   const login = async (
     identifier: string,
     password: string,
     remember: boolean
   ): Promise<void> => {
-    // Heuristic: if input is mostly digits, treat as phone number, otherwise treat as email
-    const isPhone = /^\+?[\d\s\-\(\)]+$/.test(identifier) && identifier.replace(/\D/g, '').length >= 7;
-    const payload = isPhone 
+    const isPhone =
+      /^\+?[\d\s\-()]+$/.test(identifier) && identifier.replace(/\D/g, '').length >= 7
+    const payload = isPhone
       ? { phone: identifier, password, remember }
-      : { email: identifier, password, remember };
+      : { email: identifier, password, remember }
 
-    const res = await api.post<LoginResponse>("/auth/login", payload);
+    const res = await apiClient.post<{ accessToken: string; refreshToken: string }>(
+      '/auth/login',
+      payload
+    )
 
-    const { accessToken, refreshToken } = res.data;
-    await onAuthSuccess(accessToken, refreshToken, remember);
-  };
+    const { accessToken, refreshToken } = res.data
+    await onAuthSuccess(accessToken, refreshToken, remember)
+  }
 
   const logout = async (): Promise<void> => {
     try {
-      const refreshToken: string | null =
-        localStorage.getItem("refreshToken") ||
-        sessionStorage.getItem("refreshToken");
+      const refreshToken =
+        localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
 
       if (refreshToken) {
-        await api.post("/auth/logout", { refreshToken });
+        await apiClient.post('/auth/logout', { refreshToken })
       }
-    } catch (err) {
-      console.error("Logout error");
     } finally {
-      localStorage.clear();
-      sessionStorage.clear();
-      setUser(null);
-      setShowModal(true);
+      localStorage.clear()
+      sessionStorage.clear()
+      dispatch(setUser(null))
+      dispatch(setShowModal(true))
     }
-  };
+  }
 
   const value: AuthContextType = {
     user,
-    setUser,
+    setUser: (u) => dispatch(setUser(u)),
     login,
     logout,
     showModal,
-    setShowModal,
+    setShowModal: (s) => dispatch(setShowModal(s)),
     loading,
     isAdmin,
     isSuperAdmin,
     onAuthSuccess,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-// Custom hook with type safety
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context;
-};
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

@@ -2,11 +2,11 @@ import { Drawer } from 'antd';
 import { X } from 'lucide-react';
 import type { RecentPayment } from './ResponsiveSidebar';
 
-interface SecondarySidebarProps {
-    open: boolean;
-    onClose: () => void;
-    payments: RecentPayment[];
-    loading: boolean;
+type SecondarySidebarProps = {
+  open: boolean
+  onClose: () => void
+  payments: RecentPayment[]
+  loading: boolean
 }
 
 const SidebarContent = ({ payments, loading }: { payments: RecentPayment[]; loading: boolean }) => (

@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/card"
 
 export interface ContributionData {
-    contributorName?: string;
-    label?: string;
-    percent?: number;
-    color?: string;
-    amount?: number | string;
-    totalAmount?: number | string;
+    contributorName?: string
+    label?: string
+    percent?: number
+    percentage?: number
+    color?: string
+    amount?: number | string
+    totalAmount?: number | string
 }
 
 export function ChartBarHorizontal({ data }: { data: ContributionData[] }) {
@@ -37,18 +38,18 @@ export function ChartBarHorizontal({ data }: { data: ContributionData[] }) {
                     const safeColorClass = isTailwindClass ? (color.startsWith('bg-') ? color : `bg-${color}`) : '';
 
                     // Safely parse number ignoring symbols like ₹ or %
-                    const parseNumber = (val: any): number => {
-                        if (typeof val === 'number') return val;
-                        if (typeof val === 'string') return Number(val.replace(/[^0-9.-]+/g, "")) || 0;
-                        return 0;
-                    };
+                    const parseNumber = (val: number | string | undefined): number => {
+                        if (typeof val === 'number') return val
+                        if (typeof val === 'string') return Number(val.replace(/[^0-9.-]+/g, "")) || 0
+                        return 0
+                    }
 
-                    const numericAmount = parseNumber(rawAmount);
-                    const totalAmount = safeData.reduce((sum, d) => sum + parseNumber(d.amount ?? d.totalAmount), 0);
-                    const calculatedPercent = totalAmount > 0 ? (numericAmount / totalAmount) * 100 : 0;
+                    const numericAmount = parseNumber(rawAmount)
+                    const totalAmount = safeData.reduce((sum, d) => sum + parseNumber(d.amount ?? d.totalAmount), 0)
+                    const calculatedPercent = totalAmount > 0 ? (numericAmount / totalAmount) * 100 : 0
 
-                    let percent = item.percent ?? (item as any).percentage;
-                    percent = percent !== undefined ? parseNumber(percent) : calculatedPercent;
+                    let percent = item.percent ?? item.percentage
+                    percent = percent !== undefined ? parseNumber(percent) : calculatedPercent
 
                     return (
                         <div key={index} className="flex items-center gap-2">

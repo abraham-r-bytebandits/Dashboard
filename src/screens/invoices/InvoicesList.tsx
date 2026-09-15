@@ -1,130 +1,132 @@
-import { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, Select, DatePicker, Popconfirm, message, Tag, InputNumber, Row, Col, Card } from "antd";
-import { PlusOutlined, DeleteOutlined, EditOutlined, DollarOutlined, MinusCircleOutlined } from "@ant-design/icons";
-import api from "@/api/axios";
-import { useAuth } from "@/context/AuthContext";
-import dayjs from "dayjs";
+import { useState } from 'react'
+import { Table, Button, Modal, Form, Input, Select, DatePicker, Popconfirm, message, Tag, InputNumber, Row, Col, Card } from 'antd'
+import { PlusOutlined, DeleteOutlined, EditOutlined, DollarOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { apiClient } from '@/lib/apiClient'
+import { queryClient } from '@/lib/queryClient'
+import { useAuth } from '@/context/AuthContext'
+import dayjs from 'dayjs'
+import type { AxiosError } from 'axios'
 
-const { Option } = Select;
-const { TextArea } = Input;
+const { Option } = Select
+const { TextArea } = Input
+
+type InvoiceData = {
+  publicId: string
+  title: string
+  clientPublicId?: string
+  issuedDate?: string
+  dueDate?: string
+  status?: string
+  currency?: string
+  description?: string
+  items?: Array<{ itemName: string; quantity: number; unitPrice: number; taxPercent?: number }>
+}
+
+type ClientData = {
+  publicId: string
+  name: string
+  companyName?: string
+}
 
 export default function InvoicesList() {
-    const { isAdmin, isSuperAdmin } = useAuth();
-    const [invoices, setInvoices] = useState<any[]>([]);
-    const [clients, setClients] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+  const { isAdmin, isSuperAdmin } = useAuth()
+  const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false)
+  const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false)
+  const [editingInvoice, setEditingInvoice] = useState<InvoiceData | null>(null)
+  const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null)
+  const [invoiceForm] = Form.useForm()
+  const [paymentForm] = Form.useForm()
 
-    // Modals state
-    const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
-    const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
+  const canEdit = isAdmin || isSuperAdmin
+  const canDelete = isSuperAdmin
 
-    const [submitting, setSubmitting] = useState(false);
-    const [editingInvoice, setEditingInvoice] = useState<any>(null);
-    const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null);
+  const { data: invoices = [], isLoading } = useQuery<InvoiceData[]>({
+    queryKey: ['invoices'],
+    queryFn: async () => {
+      const res = await apiClient.get('/invoices?page=1&pageSize=100')
+      return res.data.data || res.data || []
+    },
+  })
 
-    const [invoiceForm] = Form.useForm();
-    const [paymentForm] = Form.useForm();
+  const { data: clients = [] } = useQuery<ClientData[]>({
+    queryKey: ['clients-invoices'],
+    queryFn: async () => {
+      const res = await apiClient.get('/clients?page=1&pageSize=100')
+      return res.data.data || res.data || []
+    },
+  })
 
-    const canEdit = isAdmin || isSuperAdmin;
-    const canDelete = isSuperAdmin;
+  const deleteMutation = useMutation({
+    mutationFn: async (publicId: string) => await apiClient.delete(`/invoices/${publicId}`),
+    onSuccess: () => {
+      message.success('Invoice deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: AxiosError<{ message?: string }>) => message.error(error.response?.data?.message || 'Failed to delete invoice'),
+  })
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [invRes, cliRes] = await Promise.all([
-                api.get('/invoices?page=1&pageSize=100'),
-                api.get('/clients?page=1&pageSize=100')
-            ]);
-            setInvoices(invRes.data.data || invRes.data);
-            setClients(cliRes.data.data || cliRes.data);
-        } catch (error) {
-            message.error("Failed to fetch data");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const saveMutation = useMutation({
+    mutationFn: async (values: Record<string, unknown>) => {
+      const payload = {
+        ...values,
+        issuedDate: values.issuedDate ? (values.issuedDate as dayjs.Dayjs).toISOString() : undefined,
+        dueDate: values.dueDate ? (values.dueDate as dayjs.Dayjs).toISOString() : undefined,
+      }
+      if (editingInvoice) {
+        await apiClient.put(`/invoices/${editingInvoice.publicId}`, payload)
+      } else {
+        await apiClient.post('/invoices', payload)
+      }
+    },
+    onSuccess: () => {
+      message.success(editingInvoice ? 'Invoice updated successfully!' : 'Invoice created successfully!')
+      setIsInvoiceModalVisible(false)
+      invoiceForm.resetFields()
+      setEditingInvoice(null)
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: AxiosError<{ message?: string }>) => message.error(error.response?.data?.message || 'Failed to save invoice'),
+  })
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  const paymentMutation = useMutation({
+    mutationFn: async (values: Record<string, unknown>) => {
+      const payload = {
+        ...values,
+        paidAt: values.paidAt ? (values.paidAt as dayjs.Dayjs).toISOString() : new Date().toISOString(),
+      }
+      await apiClient.post(`/invoices/${paymentInvoiceId}/payments`, payload)
+    },
+    onSuccess: () => {
+      message.success('Payment recorded successfully!')
+      setIsPaymentModalVisible(false)
+      paymentForm.resetFields()
+      setPaymentInvoiceId(null)
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: AxiosError<{ message?: string }>) => message.error(error.response?.data?.message || 'Failed to record payment'),
+  })
 
-    const handleDelete = async (publicId: string) => {
-        try {
-            await api.delete(`/invoices/${publicId}`);
-            message.success("Invoice deleted successfully");
-            fetchData();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || "Failed to delete invoice");
-        }
-    };
+  const openEditModal = (invoice: InvoiceData) => {
+    setEditingInvoice(invoice)
+    invoiceForm.setFieldsValue({
+      ...invoice,
+      issuedDate: invoice.issuedDate ? dayjs(invoice.issuedDate) : null,
+      dueDate: invoice.dueDate ? dayjs(invoice.dueDate) : null,
+    })
+    setIsInvoiceModalVisible(true)
+  }
 
-    const handleInvoiceSubmit = async (values: any) => {
-        try {
-            setSubmitting(true);
-            const payload = {
-                ...values,
-                issuedDate: values.issuedDate ? values.issuedDate.toISOString() : undefined,
-                dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
-            };
+  const openPaymentModal = (publicId: string) => {
+    setPaymentInvoiceId(publicId)
+    setIsPaymentModalVisible(true)
+  }
 
-            if (editingInvoice) {
-                await api.put(`/invoices/${editingInvoice.publicId}`, payload);
-                message.success("Invoice updated successfully!");
-            } else {
-                await api.post('/invoices', payload);
-                message.success("Invoice created successfully!");
-            }
-            setIsInvoiceModalVisible(false);
-            invoiceForm.resetFields();
-            setEditingInvoice(null);
-            fetchData();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || "Failed to save invoice");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handlePaymentSubmit = async (values: any) => {
-        try {
-            setSubmitting(true);
-            const payload = {
-                ...values,
-                paidAt: values.paidAt ? values.paidAt.toISOString() : new Date().toISOString(),
-            };
-            await api.post(`/invoices/${paymentInvoiceId}/payments`, payload);
-            message.success("Payment recorded successfully!");
-            setIsPaymentModalVisible(false);
-            paymentForm.resetFields();
-            setPaymentInvoiceId(null);
-            fetchData();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || "Failed to record payment");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const openEditModal = (invoice: any) => {
-        setEditingInvoice(invoice);
-        invoiceForm.setFieldsValue({
-            ...invoice,
-            issuedDate: invoice.issuedDate ? dayjs(invoice.issuedDate) : null,
-            dueDate: invoice.dueDate ? dayjs(invoice.dueDate) : null,
-        });
-        setIsInvoiceModalVisible(true);
-    };
-
-    const openPaymentModal = (publicId: string) => {
-        setPaymentInvoiceId(publicId);
-        setIsPaymentModalVisible(true);
-    };
-
-    const columns = [
-        {
-            title: 'Invoice',
-            key: 'title',
-            render: (_: any, record: any) => (
+  const columns = [
+    {
+      title: 'Invoice',
+      key: 'title',
+      render: (_: unknown, record: InvoiceData) => (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{record.title}</span>
                     <span className="text-xs text-gray-400">
@@ -136,10 +138,10 @@ export default function InvoicesList() {
         {
             title: 'Dates',
             key: 'dates',
-            render: (_: any, record: any) => (
+            render: (_: unknown, record: InvoiceData) => (
                 <div className="flex flex-col text-sm">
-                    <span>Issued: {dayjs(record.issuedDate).format('MMM D, YYYY')}</span>
-                    <span className="text-red-500">Due: {dayjs(record.dueDate).format('MMM D, YYYY')}</span>
+                    <span>Issued: {record.issuedDate ? dayjs(record.issuedDate).format('MMM D, YYYY') : '-'}</span>
+                    <span className="text-red-500">Due: {record.dueDate ? dayjs(record.dueDate).format('MMM D, YYYY') : '-'}</span>
                 </div>
             )
         },
@@ -159,15 +161,15 @@ export default function InvoicesList() {
         {
             title: 'Total Amount',
             key: 'total',
-            render: (_: any, record: any) => {
-                const total = record.items?.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0) || 0;
-                return <span className="font-semibold text-gray-700">{record.currency || 'INR'} {total.toLocaleString()}</span>;
+            render: (_: unknown, record: InvoiceData) => {
+                const total = record.items?.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || 0
+                return <span className="font-semibold text-gray-700">{record.currency || 'INR'} {total.toLocaleString()}</span>
             }
         },
         {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: any) => (
+            render: (_: unknown, record: InvoiceData) => (
                 <div className="flex gap-2">
                     {canEdit && record.status !== 'PAID' && (
                         <Button
@@ -189,7 +191,7 @@ export default function InvoicesList() {
                     {canDelete && (
                         <Popconfirm
                             title="Delete invoice"
-                            onConfirm={() => handleDelete(record.publicId)}
+                            onConfirm={() => deleteMutation.mutate(record.publicId)}
                             okText="Yes" cancelText="No"
                         >
                             <Button danger type="text" size="small" icon={<DeleteOutlined />} />
@@ -203,7 +205,7 @@ export default function InvoicesList() {
     return (
         <div className="p-6 bg-gray-50 min-h-screen w-full">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-semibold text-[#405189]">Invoices</h1>
+                <h1 className="text-2xl font-semibold text-primary">Invoices</h1>
                 {canEdit && (
                     <Button
                         type="primary"
@@ -224,7 +226,7 @@ export default function InvoicesList() {
                     dataSource={invoices}
                     columns={columns}
                     rowKey="publicId"
-                    loading={loading}
+                    loading={isLoading}
                     pagination={{ pageSize: 10 }}
                 />
             </div>
@@ -238,7 +240,7 @@ export default function InvoicesList() {
                 width={800}
                 destroyOnClose
             >
-                <Form layout="vertical" form={invoiceForm} onFinish={handleInvoiceSubmit} className="mt-4">
+                <Form layout="vertical" form={invoiceForm} onFinish={(values) => saveMutation.mutate(values)} className="mt-4">
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="title" label="Invoice Title" rules={[{ required: true }]}>
@@ -326,7 +328,7 @@ export default function InvoicesList() {
 
                     <div className="flex justify-end gap-2 mt-4">
                         <Button onClick={() => setIsInvoiceModalVisible(false)}>Cancel</Button>
-                        <Button type="primary" htmlType="submit" loading={submitting}>
+                        <Button type="primary" htmlType="submit" loading={saveMutation.isPending}>
                             {editingInvoice ? "Save Changes" : "Create Invoice"}
                         </Button>
                     </div>
@@ -341,7 +343,7 @@ export default function InvoicesList() {
                 footer={null}
                 destroyOnClose
             >
-                <Form layout="vertical" form={paymentForm} onFinish={handlePaymentSubmit} className="mt-4">
+                <Form layout="vertical" form={paymentForm} onFinish={(values) => paymentMutation.mutate(values)} className="mt-4">
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="amount" label="Amount Captured" rules={[{ required: true }]}>
@@ -379,12 +381,12 @@ export default function InvoicesList() {
 
                     <div className="flex justify-end gap-2 mt-4">
                         <Button onClick={() => setIsPaymentModalVisible(false)}>Cancel</Button>
-                        <Button type="primary" htmlType="submit" loading={submitting}>
+                        <Button type="primary" htmlType="submit" loading={paymentMutation.isPending}>
                             Record Payment
                         </Button>
                     </div>
                 </Form>
             </Modal>
         </div>
-    );
+    )
 }

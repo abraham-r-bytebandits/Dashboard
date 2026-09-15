@@ -1,14 +1,14 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
-interface DashboardCardProps {
-    title: string;
-    value: string;
-    change: string;
-    isPositive: boolean;
-    icon: React.ReactNode;
-    iconBg?: string;
-    iconTextColor?: string;
-    link?: string;
+type DashboardCardProps = {
+  title: string
+  value: string
+  change: string
+  isPositive: boolean
+  icon: React.ReactNode
+  iconBg?: string
+  iconTextColor?: string
+  link?: string
 }
 
 export const DashboardCard = ({ title, value, change, isPositive, icon, iconBg, link = "bg-emerald-50", iconTextColor = "text-emerald-600" }: DashboardCardProps) => {

@@ -1,22 +1,24 @@
-import { TrendingUp, TrendingDown, Bell, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ConfigProvider } from 'antd';
-import 'antd/dist/reset.css';
-import { ChartBarHorizontal } from '@/components/chart/HorizontalBarChart';
-import DashboardTable from '@/components/table/DashboardTable';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { DatePickerWithRange } from '@/components/DatePickerWithRange';
-import { Field } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { SearchOutlined } from "@ant-design/icons"
-import { useEffect, useState } from 'react';
-import api from '@/api/axios';
-import { useAuth } from '@/context/AuthContext';
-import ResponsiveSidebar from '@/components/Sidebar/ResponsiveSidebar';
-import SpendBreakdown from '@/components/chart/SpendBreakdownChart';
-import TotalExpenseChart from '@/components/chart/TotalExpenseChart';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import { TrendingUp, TrendingDown, Bell, LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ConfigProvider } from 'antd'
+import 'antd/dist/reset.css'
+import { ChartBarHorizontal } from '@/components/chart/HorizontalBarChart'
+import DashboardTable from '@/components/table/DashboardTable'
+import { SidebarTrigger } from '@/components/ui/sidebar'
+import { DatePickerWithRange } from '@/components/DatePickerWithRange'
+import { Field } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { SearchOutlined } from '@ant-design/icons'
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@/lib/apiClient'
+import { useAuth } from '@/context/AuthContext'
+import ResponsiveSidebar from '@/components/Sidebar/ResponsiveSidebar'
+import SpendBreakdown from '@/components/chart/SpendBreakdownChart'
+import TotalExpenseChart from '@/components/chart/TotalExpenseChart'
+import { ThunderboltOutlined } from '@ant-design/icons'
+import type { DashboardOverview, Contribution, ChartData } from '@/types'
 
 const SummaryCard = ({
     title,
@@ -49,11 +51,8 @@ const SummaryCard = ({
             </span>
             <a
                 href="#"
-                className="text-xs text-[#0157FF] underline hover:no-underline transition-colors"
-                onClick={(e) => {
-                    e.preventDefault();
-                    console.log(`View details for ${title}`);
-                }}
+                className="text-xs text-blue-600 underline hover:no-underline transition-colors"
+                onClick={(e) => e.preventDefault()}
             >
                 View more details
             </a>
@@ -62,86 +61,54 @@ const SummaryCard = ({
 );
 
 const FinancialDashboard = () => {
-    const { user, logout } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [overview, setOverview] = useState<any>(null);
-    const [contributions, setContributions] = useState<any[]>([]);
-    const [chartDataPayload, setChartDataPayload] = useState<any>(null);
-
-    // Default open on XL+ screens, closed on smaller screens
+    const { user, logout } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(() => {
         if (typeof window !== 'undefined') {
-            return window.innerWidth >= 2880;
+            return window.innerWidth >= 2880
         }
-        return false;
-    });
+        return false
+    })
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [
-                    overviewRes,
-                    contributionsRes,
-                    chartDataRes
-                ] = await Promise.all([
-                    api.get('/dashboard/overview').catch(() => ({ data: { success: false } })),
-                    api.get('/dashboard/contributions').catch(() => ({ data: { success: false } })),
-                    api.get('/dashboard/chart-data').catch(() => ({ data: { success: false } }))
-                ]);
+    const { data: overview } = useQuery<DashboardOverview>({
+        queryKey: ['dashboard-overview'],
+        queryFn: async () => {
+            const res = await apiClient.get('/dashboard/overview')
+            return res.data?.data || res.data || null
+        },
+    })
 
-                if (overviewRes.data?.success) {
-                    setOverview(overviewRes.data.data);
-                } else if (overviewRes.data && !overviewRes.data.success) {
-                    setOverview(null);
-                } else if (overviewRes.data) {
-                    setOverview(overviewRes.data);
-                }
-
-                if (contributionsRes.data?.success && Array.isArray(contributionsRes.data?.data)) {
-                    setContributions(contributionsRes.data.data);
-                } else if (Array.isArray(contributionsRes.data)) {
-                    setContributions(contributionsRes.data);
-                } else {
-                    setContributions([]);
-                }
-
-                if (chartDataRes.data?.success) {
-                    setChartDataPayload(chartDataRes.data.data);
-                } else if (chartDataRes.data && !chartDataRes.data.success) {
-                    setChartDataPayload(null);
-                } else if (chartDataRes.data) {
-                    setChartDataPayload(chartDataRes.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            } finally {
-                setLoading(false);
+    const { data: contributions = [] } = useQuery<Contribution[]>({
+        queryKey: ['dashboard-contributions'],
+        queryFn: async () => {
+            const res = await apiClient.get('/dashboard/contributions')
+            if (res.data?.success && Array.isArray(res.data?.data)) {
+                return res.data.data
             }
-        };
+            return Array.isArray(res.data) ? res.data : []
+        },
+    })
 
-        fetchDashboardData();
-    }, []);
+    const { data: chartDataPayload } = useQuery<ChartData>({
+        queryKey: ['dashboard-chart-data'],
+        queryFn: async () => {
+            const res = await apiClient.get('/dashboard/chart-data')
+            return res.data?.data || res.data || null
+        },
+    })
 
-    // Handle window resize to maintain sidebar state
     useEffect(() => {
         const handleResize = () => {
-            const isXlScreen = window.innerWidth >= 1700;
+            const isXlScreen = window.innerWidth >= 1700
             if (isXlScreen && !sidebarOpen) {
-                // Auto-open sidebar when switching to XL screen if it was closed
-                setSidebarOpen(true);
+                setSidebarOpen(true)
             } else if (!isXlScreen && sidebarOpen) {
-                // Close sidebar when switching to smaller screen if it was open
-                setSidebarOpen(false);
+                setSidebarOpen(false)
             }
-        };
+        }
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [sidebarOpen]);
-
-    if (loading) {
-        return <div className="flex h-screen w-full items-center justify-center text-gray-500 font-medium">Loading Dashboard Data...</div>;
-    }
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [sidebarOpen])
 
     return (
         <div className="flex w-full min-h-screen bg-[#F3F3F9]">
@@ -261,11 +228,11 @@ const FinancialDashboard = () => {
 
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                 <div className="lg:col-span-4 space-y-4">
-                                    <SpendBreakdown data={chartDataPayload?.pieChartData} />
+                                    <SpendBreakdown data={chartDataPayload?.pieChartData as {name: string; value: number; share: string; color: string}[] | undefined} />
                                 </div>
 
                                 <div className="lg:col-span-8 bg-white rounded-xl">
-                                    <TotalExpenseChart data={chartDataPayload?.barChartData} />
+                                    <TotalExpenseChart data={chartDataPayload?.barChartData as unknown[] | undefined} />
                                 </div>
                             </div>
 

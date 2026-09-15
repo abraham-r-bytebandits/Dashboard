@@ -1,18 +1,22 @@
-import './App.css';
-import { SidebarProvider } from "./components/ui/sidebar"
-import { AppSidebar } from "./components/Sidebar/AppSidebar"
-import FinancialDashboard from './screens/FinancialDashboard';
-import AddExpense from './screens/AddExpense';
-import AuthModal from './components/login/AuthModal';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth, AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import UserManagement from './screens/admin/UserManagement';
-import SiteManagement from './screens/admin/SiteManagement';
-import ClientsList from './screens/clients/ClientsList';
-import InvoicesList from './screens/invoices/InvoicesList';
-import ImageConverter from './screens/ImageConverter';
-import ContactMessagesList from './screens/admin/ContactMessagesList';
+import './App.css'
+import { SidebarProvider } from './components/ui/sidebar'
+import { AppSidebar } from './components/Sidebar/AppSidebar'
+import FinancialDashboard from './screens/FinancialDashboard'
+import AddExpense from './screens/AddExpense'
+import AuthModal from './components/login/AuthModal'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Provider } from 'react-redux'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { store } from './store'
+import { queryClient } from './lib/queryClient'
+import { useAuth, AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import UserManagement from './screens/admin/UserManagement'
+import SiteManagement from './screens/admin/SiteManagement'
+import ClientsList from './screens/clients/ClientsList'
+import InvoicesList from './screens/invoices/InvoicesList'
+import ImageConverter from './screens/ImageConverter'
+import ContactMessagesList from './screens/admin/ContactMessagesList'
 
 function MainArea() {
   return (
@@ -61,11 +65,15 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+    </Provider>
   )
 }
 

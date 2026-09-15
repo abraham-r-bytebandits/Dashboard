@@ -1,20 +1,20 @@
-// components/Sidebar/ResponsiveSidebar.tsx
-import { useEffect, useState } from 'react';
-import SecondarySidebar from './SecondarySidebar';
-import api from '@/api/axios';
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import SecondarySidebar from './SecondarySidebar'
+import { apiClient } from '@/lib/apiClient'
 
-interface ResponsiveSidebarProps {
-    open: boolean;
-    onClose: () => void;
+type ResponsiveSidebarProps = {
+  open: boolean
+  onClose: () => void
 }
 
-export interface RecentPayment {
-    id: string;
-    clientName: string;
-    avatar: string;
-    title: string;
-    amount: number;
-    type?: string;
+export type RecentPayment = {
+  id: string
+  clientName: string
+  avatar: string
+  title: string
+  amount: number
+  type?: string
 }
 
 const SidebarContent = ({ payments, loading }: { payments: RecentPayment[]; loading: boolean }) => (
@@ -61,98 +61,118 @@ const SidebarContent = ({ payments, loading }: { payments: RecentPayment[]; load
     </div>
 );
 
+type TransactionItem = {
+  publicId?: string
+  id?: string
+  expense?: { title?: string }
+  invoice?: { invoiceNumber?: string }
+  contribution?: { contributorName?: string }
+  description?: string
+  category?: string
+  createdBy?: {
+    username?: string
+    profile?: {
+      firstName?: string
+      lastName?: string
+      profileImage?: string
+    }
+  }
+  amount?: number | string
+  type?: string
+}
+
+type TransactionResponse = {
+  success: boolean
+  data: TransactionItem[]
+}
+
 const ResponsiveSidebar = ({ open, onClose }: ResponsiveSidebarProps) => {
-    const [isXlScreen, setIsXlScreen] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth >= 1700;
-        }
-        return false;
-    });
+  const [isXlScreen, setIsXlScreen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1700
+    }
+    return false
+  })
 
-    const [payments, setPayments] = useState<RecentPayment[]>([]);
-    const [loading, setLoading] = useState(true);
+  const { data: response, isLoading, refetch } = useQuery<TransactionResponse>({
+    queryKey: ['recent-transactions'],
+    queryFn: async () => {
+      const res = await apiClient.get<TransactionResponse>('/dashboard/table/recent-transactions?page=1')
+      return res.data
+    },
+  })
 
-    useEffect(() => {
-        const handleResize = () => {
-            setIsXlScreen(window.innerWidth >= 1700);
-        };
+  const payments: RecentPayment[] = (response?.data || []).map((item, idx) => {
+    const title =
+      item.expense?.title ||
+      item.invoice?.invoiceNumber ||
+      item.contribution?.contributorName ||
+      item.description ||
+      'Transaction'
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const createdBy = item.createdBy
+    const profile = createdBy?.profile
+    let name = item.category || 'Transaction'
 
-    useEffect(() => {
-        const fetchRecentPayments = async () => {
-            try {
-                setLoading(true);
-                const res = await api.get('/dashboard/table/recent-transactions?page=1');
-                if (res.data.success) {
-                    const mapped: RecentPayment[] = (res.data.data || []).map((item: any, idx: number) => {
-                        const title = item.expense?.title || item.invoice?.invoiceNumber || item.contribution?.contributorName || item.description || 'Transaction';
-                        
-                        const createdBy = item.createdBy;
-                        const profile = createdBy?.profile;
-                        let name = item.category || 'Transaction';
-
-                        if (profile?.firstName || profile?.lastName) {
-                            name = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
-                        } else if (createdBy?.username) {
-                            name = createdBy.username.split('@')[0];
-                        }
-
-                        const avatar = profile?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-
-                        return {
-                            id: item.publicId || item.id || String(idx),
-                            clientName: name,
-                            avatar: avatar,
-                            title: title,
-                            amount: Number(item.amount || 0),
-                            type: item.type,
-                        };
-                    });
-                    setPayments(mapped);
-                }
-            } catch (error) {
-                console.error('Failed to fetch recent payments:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchRecentPayments();
-        
-        const handleUpdate = fetchRecentPayments as EventListener;
-        window.addEventListener('expensePaid', handleUpdate);
-        window.addEventListener('transactionsUpdated', handleUpdate);
-
-        return () => {
-            window.removeEventListener('expensePaid', handleUpdate);
-            window.removeEventListener('transactionsUpdated', handleUpdate);
-        };
-    }, []);
-
-    // Below XL: render the Drawer-based SecondarySidebar
-    if (!isXlScreen) {
-        return <SecondarySidebar open={open} onClose={onClose} payments={payments} loading={loading} />;
+    if (profile?.firstName || profile?.lastName) {
+      name = `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
+    } else if (createdBy?.username) {
+      name = createdBy.username.split('@')[0]
     }
 
-    // XL and above: render fixed right-side panel
-    return (
-        <div
-            className={`
-                fixed top-0 right-0 h-full w-[250px] bg-white border-l border-gray-200 shadow-xl z-50
-                transition-transform duration-300 ease-in-out
-                ${open ? 'translate-x-0' : 'translate-x-full'}
-            `}
-        >
-            <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto">
-                    <SidebarContent payments={payments} loading={loading} />
-                </div>
-            </div>
-        </div>
-    );
-};
+    const avatar =
+      profile?.profileImage ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
 
-export default ResponsiveSidebar;
+    return {
+      id: item.publicId || item.id || String(idx),
+      clientName: name,
+      avatar: avatar,
+      title: title,
+      amount: Number(item.amount || 0),
+      type: item.type,
+    }
+  })
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsXlScreen(window.innerWidth >= 1700)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    const handleUpdate = () => refetch()
+    window.addEventListener('expensePaid', handleUpdate)
+    window.addEventListener('transactionsUpdated', handleUpdate)
+
+    return () => {
+      window.removeEventListener('expensePaid', handleUpdate)
+      window.removeEventListener('transactionsUpdated', handleUpdate)
+    }
+  }, [refetch])
+
+  if (!isXlScreen) {
+    return <SecondarySidebar open={open} onClose={onClose} payments={payments} loading={isLoading} />
+  }
+
+  return (
+    <div
+      className={`
+        fixed top-0 right-0 h-full w-[250px] bg-white border-l border-gray-200 shadow-xl z-50
+        transition-transform duration-300 ease-in-out
+        ${open ? 'translate-x-0' : 'translate-x-full'}
+      `}
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+          <SidebarContent payments={payments} loading={isLoading} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ResponsiveSidebar

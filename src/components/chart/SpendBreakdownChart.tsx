@@ -10,22 +10,29 @@ const fallbackData = [
     { name: "utilities", value: 310, share: "11.7", color: "#F5C518" },
 ];
 
-interface SpendBreakdownProps {
-    data?: { name: string; value: number; share: string; color: string }[];
+type SpendBreakdownItem = {
+    name: string
+    value: number
+    share: string
+    color?: string
+}
+
+type SpendBreakdownProps = {
+  data?: SpendBreakdownItem[]
 }
 
 export default function SpendBreakdown({ data: externalData }: SpendBreakdownProps) {
-    const COLORS = ["#E8542A", "#2DA89A", "#1B5E6E", "#F5C518", "#8B5CF6", "#EC4899", "#10B981"];
-    let data = fallbackData;
-    
+    const COLORS = ["#E8542A", "#2DA89A", "#1B5E6E", "#F5C518", "#8B5CF6", "#EC4899", "#10B981"]
+    let data = fallbackData
+
     if (Array.isArray(externalData)) {
-        const totalValue = externalData.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+        const totalValue = externalData.reduce((sum, d) => sum + (Number(d.value) || 0), 0)
         data = externalData.map((d, i) => ({
             name: d.name,
             value: Number(d.value) || 0,
             share: totalValue > 0 ? ((Number(d.value) / totalValue) * 100).toFixed(1) : "0.0",
-            color: (d as any).color || COLORS[i % COLORS.length]
-        }));
+            color: d.color || COLORS[i % COLORS.length]
+        }))
     }
 
     const TOTAL = data.reduce((sum, d) => sum + d.value, 0);

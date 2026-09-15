@@ -1,5 +1,5 @@
 
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, type LucideIcon } from "lucide-react"
 import { NavUser } from "../ui/nav-user"
 import {
     Collapsible,
@@ -23,8 +23,23 @@ import { data } from "@/lib/sidebar"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 
+type NavSubItem = {
+    title: string
+    url: string
+}
+
+type NavMainItem = {
+    title: string
+    url: string
+    icon?: LucideIcon
+    isActive?: boolean
+    isSuperAdminOnly?: boolean
+    isAdminOnly?: boolean
+    items?: NavSubItem[]
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { isAdmin, isSuperAdmin, user } = useAuth();
+    const { isAdmin, isSuperAdmin, user } = useAuth()
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -51,12 +66,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {/* Main Navigation */}
                 <SidebarGroup>
                     <SidebarMenu className="gap-3">
-                        {data.navMain.map((item: any) => {
+                        {data.navMain.map((item: NavMainItem) => {
                             if (item.isSuperAdminOnly && !isSuperAdmin) {
-                                return null;
+                                return null
                             }
                             if (item.isAdminOnly && !isAdmin) {
-                                return null;
+                                return null
                             }
                             return item.items?.length ? (
                                 <Collapsible
@@ -75,7 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                         </CollapsibleTrigger>
                                         <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down gap-3">
                                             <SidebarMenuSub className="gap-3">
-                                                {item.items.map((subItem: any) => (
+                                                {item.items.map((subItem: NavSubItem) => (
                                                     <SidebarMenuSubItem key={subItem.title}>
                                                         <SidebarMenuSubButton asChild isActive={currentRoute === subItem.url}>
                                                             <a href={subItem.url} onClick={(e) => handleNavigation(e, subItem.url)}>

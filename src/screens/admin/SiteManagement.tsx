@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react"
 import {
     Table,
     Button,
     Modal,
-    Form,
     Input,
     Popconfirm,
     message,
     Tag,
     Tooltip,
     Space,
-} from "antd";
+} from "antd"
 import {
     PlusOutlined,
     EditOutlined,
@@ -20,9 +19,15 @@ import {
     GlobalOutlined,
     LockOutlined,
     HolderOutlined,
-} from "@ant-design/icons";
-import { useAuth } from "@/context/AuthContext";
-import api from "@/api/axios";
+} from "@ant-design/icons"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { AxiosError } from "axios"
+import { apiClient } from "@/lib/apiClient"
+import { queryClient } from "@/lib/queryClient"
+import { useAuth } from "@/context/AuthContext"
+import { siteSchema, type SiteFormData } from "./site.schema"
 
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext } from '@dnd-kit/core';
@@ -35,46 +40,39 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-interface SiteEntry {
-    id?: string;
-    _id?: string;
-    name: string;
-    userName: string;
-    url?: string;
-    password: string;
+type SiteEntry = {
+  id?: string
+  _id?: string
+  name: string
+  userName: string
+  url?: string
+  password: string
 }
 
 // ── PasswordCell ───────────────────────────────────────────────────────────
 function PasswordCell({ password }: { password: string }) {
-    const [visible, setVisible] = useState(false);
+    const [visible, setVisible] = useState(false)
     return (
         <Space>
-            <span
-                style={{
-                    fontFamily: "monospace",
-                    letterSpacing: visible ? "normal" : "0.15em",
-                    fontSize: 13,
-                    color: "#374151",
-                }}
-            >
-                {visible ? password : "•".repeat(Math.min(password.length, 10))}
+            <span className={`font-mono text-[13px] text-gray-700 ${visible ? 'tracking-normal' : 'tracking-wide'}`}>
+              {visible ? password : '•'.repeat(Math.min(password.length, 10))}
             </span>
-            <Tooltip title={visible ? "Hide password" : "Show password"}>
-                <Button
-                    type="text"
-                    size="small"
-                    icon={visible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setVisible((v) => !v)}
-                    style={{ color: "#6B7280" }}
-                />
+            <Tooltip title={visible ? 'Hide password' : 'Show password'}>
+              <Button
+                type="text"
+                size="small"
+                icon={visible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                onClick={() => setVisible((v) => !v)}
+                className="text-gray-500"
+              />
             </Tooltip>
         </Space>
-    );
+    )
 }
 
 // ── Row ────────────────────────────────────────────────────────────────────
-interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
-    'data-row-key': string;
+type RowProps = React.HTMLAttributes<HTMLTableRowElement> & {
+  'data-row-key': string
 }
 
 const Row = ({ children, ...props }: RowProps) => {
@@ -101,6 +99,7 @@ const Row = ({ children, ...props }: RowProps) => {
         <tr {...props} ref={setNodeRef} style={style} {...attributes}>
             {React.Children.map(children, (child) => {
                 if ((child as React.ReactElement).key === 'sort') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return React.cloneElement(child as React.ReactElement<any>, {
                         children: (
                             <HolderOutlined
@@ -109,99 +108,108 @@ const Row = ({ children, ...props }: RowProps) => {
                                 {...listeners}
                             />
                         ),
-                    });
+                    })
                 }
-                return child;
+                return child
             })}
         </tr>
-    );
-};
+    )
+}
 
 // ── Main Component ─────────────────────────────────────────────────────────
+type SitesResponse = {
+    data?: SiteEntry[]
+    success?: boolean
+}
+
 export default function SiteManagement() {
-    const { isSuperAdmin } = useAuth();
+    const { isSuperAdmin } = useAuth()
 
-    const [sites, setSites] = useState<SiteEntry[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editingRecord, setEditingRecord] = useState<SiteEntry | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-    const [form] = Form.useForm();
+    const [sites, setSites] = useState<SiteEntry[]>([])
+    const [modalOpen, setModalOpen] = useState(false)
+    const [editingRecord, setEditingRecord] = useState<SiteEntry | null>(null)
 
-    // ── fetch / load ────────────────────────────────────────────────────────
-    const fetchSites = async () => {
-        setLoading(true);
-        try {
-            const res = await api.get('/sites');
-            // Safely handle paginated response { success, data } vs direct array
-            const fetchedData = res.data?.data || res.data;
-            setSites(Array.isArray(fetchedData) ? fetchedData : []);
-        } catch (error: any) {
-            console.error("Fetch sites error:", error);
-            message.error(error.response?.data?.message || "Failed to load sites.");
-        } finally {
-            setLoading(false);
+    const { control, handleSubmit, reset, setValue, formState: { errors } } = useForm<SiteFormData>({
+        resolver: zodResolver(siteSchema),
+        defaultValues: {
+            name: '',
+            url: '',
+            userName: '',
+            password: '',
         }
-    };
+    })
 
-    useEffect(() => {
-        if (isSuperAdmin) fetchSites();
-    }, [isSuperAdmin]);
+    const { data: sitesResponse, isLoading } = useQuery<SitesResponse>({
+        queryKey: ['sites'],
+        queryFn: async () => {
+            const res = await apiClient.get('/sites')
+            return res.data
+        },
+        enabled: isSuperAdmin
+    })
 
-    // ── open modal ─────────────────────────────────────────────────────────
+    const fetchedSites = sitesResponse?.data || sitesResponse
+    React.useEffect(() => {
+        if (Array.isArray(fetchedSites)) {
+            setSites(fetchedSites)
+        }
+    }, [fetchedSites])
+
+    const saveMutation = useMutation({
+        mutationFn: async (values: SiteFormData) => {
+            if (editingRecord) {
+                await apiClient.put(`/sites/${editingRecord.id}`, values)
+            } else {
+                await apiClient.post('/sites', values)
+            }
+        },
+        onSuccess: () => {
+            message.success(editingRecord ? "Site updated successfully." : "Site added successfully.")
+            queryClient.invalidateQueries({ queryKey: ['sites'] })
+            closeModal()
+        },
+        onError: (error: AxiosError<{ message?: string }>) => {
+            message.error(error.response?.data?.message || "Operation failed. Please try again.")
+        }
+    })
+
+    const deleteMutation = useMutation({
+        mutationFn: async (recordId: string) => {
+            await apiClient.delete(`/sites/${recordId}`)
+        },
+        onSuccess: () => {
+            message.success("Site deleted.")
+            queryClient.invalidateQueries({ queryKey: ['sites'] })
+        },
+        onError: (error: AxiosError<{ message?: string }>) => {
+            message.error(error.response?.data?.message || "Failed to delete site.")
+        }
+    })
+
     const openAdd = () => {
-        setEditingRecord(null);
-        form.resetFields();
-        setModalOpen(true);
-    };
+        setEditingRecord(null)
+        reset()
+        setModalOpen(true)
+    }
 
     const openEdit = (record: SiteEntry) => {
-        setEditingRecord(record);
-        form.setFieldsValue({ name: record.name, url: record.url, userName: record.userName, password: record.password });
-        setModalOpen(true);
-    };
+        setEditingRecord(record)
+        setValue('name', record.name)
+        setValue('url', record.url || '')
+        setValue('userName', record.userName)
+        setValue('password', record.password)
+        setModalOpen(true)
+    }
 
     const closeModal = () => {
-        setModalOpen(false);
-        setEditingRecord(null);
-        form.resetFields();
-    };
+        setModalOpen(false)
+        setEditingRecord(null)
+        reset()
+    }
 
-    // ── submit ─────────────────────────────────────────────────────────────
-    const handleSubmit = async (values: { name: string; url?: string; userName: string; password: string }) => {
-        setSubmitting(true);
-        try {
-            if (editingRecord) {
-                // Update
-                await api.put(`/sites/${editingRecord.id}`, values);
-                message.success("Site updated successfully.");
-            } else {
-                // Create
-                await api.post('/sites', values);
-                message.success("Site added successfully.");
-            }
-
-            await fetchSites();
-            closeModal();
-        } catch (error: any) {
-            console.error("Submit site error:", error);
-            message.error(error.response?.data?.message || "Operation failed. Please try again.");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    // ── delete ─────────────────────────────────────────────────────────────
-    const handleDelete = async (recordId: string) => {
-        try {
-            await api.delete(`/sites/${recordId}`);
-            message.success("Site deleted.");
-            await fetchSites();
-        } catch (error: any) {
-            console.error("Delete site error:", error);
-            message.error(error.response?.data?.message || "Failed to delete site.");
-        }
-    };
+    const onSubmit = (values: SiteFormData) => {
+        saveMutation.mutate(values)
+    }
 
     // ── drag ───────────────────────────────────────────────────────────────
     const onDragEnd = ({ active, over }: DragEndEvent) => {
@@ -225,7 +233,7 @@ export default function SiteManagement() {
             title: "No.",
             key: "no",
             width: 70,
-            render: (_: any, __: any, index: number) => (
+            render: (_: unknown, __: unknown, index: number) => (
                 <span className="text-gray-500 font-medium">{index + 1}</span>
             ),
         },
@@ -249,9 +257,9 @@ export default function SiteManagement() {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[#405189] hover:underline break-all"
+                        className="flex items-center gap-1 text-primary hover:underline break-all"
                     >
-                        <GlobalOutlined style={{ fontSize: 12 }} />
+                        <GlobalOutlined className="text-xs" />
                         {url}
                     </a>
                 ) : (
@@ -278,24 +286,22 @@ export default function SiteManagement() {
             key: "actions",
             width: 120,
             align: "center" as const,
-            render: (_: any, record: SiteEntry) => (
+            render: (_: unknown, record: SiteEntry) => (
                 <Space size="small">
-                    {/* Edit */}
                     <Tooltip title="Edit">
                         <Button
                             type="text"
                             size="small"
                             icon={<EditOutlined />}
                             onClick={() => openEdit(record)}
-                            style={{ color: "#405189" }}
+                            className="text-primary"
                         />
                     </Tooltip>
 
-                    {/* Delete */}
                     <Popconfirm
                         title="Delete this site?"
                         description="This action cannot be undone."
-                        onConfirm={() => handleDelete(record.id || record._id as string)}
+                        onConfirm={() => deleteMutation.mutate((record.id || record._id) as string)}
                         okText="Delete"
                         okButtonProps={{ danger: true }}
                         cancelText="Cancel"
@@ -312,7 +318,7 @@ export default function SiteManagement() {
                 </Space>
             ),
         },
-    ];
+    ]
 
     // ── access guard ────────────────────────────────────────────────────────
     if (!isSuperAdmin) {
@@ -371,14 +377,14 @@ export default function SiteManagement() {
                             }}
                             rowSelection={{
                                 type: 'checkbox',
-                                onChange: (_selectedRowKeys: React.Key[], _selectedRows: SiteEntry[]) => {
+                                onChange: () => {
                                     // Selection is tracked internally by Ant Design Table
                                 },
                             }}
                             dataSource={sites}
                             columns={columns}
                             rowKey={(record) => (record.id || record._id || record.name) as string}
-                            loading={loading}
+                            loading={isLoading}
                             pagination={{ pageSize: 10, showSizeChanger: false }}
                             scroll={{ x: "max-content" }}
                             locale={{ emptyText: "No sites added yet." }}
@@ -390,71 +396,92 @@ export default function SiteManagement() {
             {/* Add / Edit Modal */}
             <Modal
                 title={
-                    <span className="text-[#405189] font-semibold">
+                    <span className="text-primary font-semibold">
                         {editingRecord ? "Edit Site" : "Add New Site"}
                     </span>
                 }
                 open={modalOpen}
                 onCancel={closeModal}
                 footer={null}
-                destroyOnHidden
+                destroyOnClose
                 width={480}
             >
-                <Form
-                    layout="vertical"
-                    form={form}
-                    onFinish={handleSubmit}
-                    className="mt-4"
-                >
-                    {/* Name */}
-                    <Form.Item
-                        name="name"
-                        label="Site Name"
-                        rules={[{ required: true, message: "Site name is required" }]}
-                    >
-                        <Input placeholder="e.g. Main Portal" />
-                    </Form.Item>
+                <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Site Name</label>
+                        <Controller
+                            name="name"
+                            control={control}
+                            render={({ field }) => (
+                                <Input
+                                    {...field}
+                                    placeholder="e.g. Main Portal"
+                                    status={errors.name ? 'error' : ''}
+                                />
+                            )}
+                        />
+                        {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
+                    </div>
 
-                    {/* URL */}
-                    <Form.Item
-                        name="url"
-                        label="URL"
-                        required={false}
-                    >
-                        <Input placeholder="https://example.com" prefix={<GlobalOutlined />} />
-                    </Form.Item>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">URL</label>
+                        <Controller
+                            name="url"
+                            control={control}
+                            render={({ field }) => (
+                                <Input
+                                    {...field}
+                                    placeholder="https://example.com"
+                                    prefix={<GlobalOutlined />}
+                                />
+                            )}
+                        />
+                    </div>
 
-                    {/* User Name */}
-                    <Form.Item
-                        name="userName"
-                        label="User Name"
-                        rules={[{ required: true, message: "User name is required" }]}
-                    >
-                        <Input placeholder="e.g. admin" />
-                    </Form.Item>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">User Name</label>
+                        <Controller
+                            name="userName"
+                            control={control}
+                            render={({ field }) => (
+                                <Input
+                                    {...field}
+                                    placeholder="e.g. admin"
+                                    status={errors.userName ? 'error' : ''}
+                                />
+                            )}
+                        />
+                        {errors.userName && <span className="text-red-500 text-xs">{errors.userName.message}</span>}
+                    </div>
 
-                    {/* Password */}
-                    <Form.Item
-                        name="password"
-                        label="Password"
-                        rules={[{ required: true, message: "Password is required" }]}
-                    >
-                        <Input.Password placeholder="Enter password" prefix={<LockOutlined />} />
-                    </Form.Item>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Password</label>
+                        <Controller
+                            name="password"
+                            control={control}
+                            render={({ field }) => (
+                                <Input.Password
+                                    {...field}
+                                    placeholder="Enter password"
+                                    prefix={<LockOutlined />}
+                                    status={errors.password ? 'error' : ''}
+                                />
+                            )}
+                        />
+                        {errors.password && <span className="text-red-500 text-xs">{errors.password.message}</span>}
+                    </div>
 
-                    {/* Actions */}
                     <div className="flex justify-end gap-2 mt-2">
                         <Button onClick={closeModal}>Cancel</Button>
                         <Button
                             type="primary"
                             htmlType="submit"
-                            loading={submitting}
-                            style={{ background: "#405189", borderColor: "#405189" }}
+                            loading={saveMutation.isPending}
                         >
                             {editingRecord ? "Save Changes" : "Add Site"}
                         </Button>
                     </div>
-                </Form>
+                </form>
             </Modal>
         </div>
     );

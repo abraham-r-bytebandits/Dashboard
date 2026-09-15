@@ -1,12 +1,28 @@
-import { useEffect, useState } from "react";
-import { Card, Row, Col, Statistic, Alert, Spin, message, Divider } from "antd";
-import { LineChartOutlined, FileSyncOutlined } from "@ant-design/icons";
-import api from "@/api/axios";
+import { useEffect, useState } from "react"
+import { Card, Row, Col, Statistic, Alert, Spin, message, Divider } from "antd"
+import { LineChartOutlined, FileSyncOutlined } from "@ant-design/icons"
+import api from "@/api/axios"
+
+type FinancialSummary = {
+    totalRevenue?: number
+    totalExpenses?: number
+    netIncome?: number
+    totalIncome?: number
+    netProfit?: number
+}
+
+type TaxSummary = {
+    estimatedTax?: number
+    taxableIncome?: number
+    totalTaxCollected?: number
+    totalTaxPaid?: number
+    netTaxLiability?: number
+}
 
 export default function ReportsDashboard() {
-    const [finSummary, setFinSummary] = useState<any>(null);
-    const [taxSummary, setTaxSummary] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [finSummary, setFinSummary] = useState<FinancialSummary | null>(null)
+    const [taxSummary, setTaxSummary] = useState<TaxSummary | null>(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -16,17 +32,17 @@ export default function ReportsDashboard() {
                     api.get('/reports/tax-summary').catch(() => ({ data: null }))
                 ]);
 
-                setFinSummary(finRes.data?.data || finRes.data || {});
-                setTaxSummary(taxRes.data?.data || taxRes.data || {});
-            } catch (error) {
-                message.error("Failed to fetch report data");
+                setFinSummary(finRes.data?.data || finRes.data || {})
+                setTaxSummary(taxRes.data?.data || taxRes.data || {})
+            } catch {
+                message.error("Failed to fetch report data")
             } finally {
-                setLoading(false);
+                setLoading(false)
             }
-        };
+        }
 
-        fetchReports();
-    }, []);
+        fetchReports()
+    }, [])
 
     if (loading) {
         return (

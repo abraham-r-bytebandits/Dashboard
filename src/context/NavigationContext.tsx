@@ -18,9 +18,10 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     <NavigationContext.Provider value={{ currentRoute, navigate }}>
       {children}
     </NavigationContext.Provider>
-  );
-};
+  )
+}
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNavigation = () => {
   const context = useContext(NavigationContext);
   if (context === undefined) {

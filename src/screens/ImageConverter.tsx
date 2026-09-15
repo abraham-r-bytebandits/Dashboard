@@ -15,10 +15,10 @@ import type { UploadFile, UploadProps } from 'antd';
 const { Text } = Typography;
 const { Dragger } = Upload;
 
-interface CompressionStats {
-  originalSize: number;
-  compressedSize: number;
-  compressionPercent: number;
+type CompressionStats = {
+  originalSize: number
+  compressedSize: number
+  compressionPercent: number
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -83,9 +83,9 @@ const ImageConverter: React.FC = () => {
       setConvertedImageUrl(webpUrl);
       message.success(`Image compressed by ${compressionPercent}% and converted to WebP!`);
 
-    } catch (err: any) {
-      console.error(err);
-      message.error(err.response?.data?.message || "Failed to convert image.");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      message.error(error.response?.data?.message || 'Failed to convert image.')
     } finally {
       setIsLoading(false);
     }
@@ -219,8 +219,7 @@ const ImageConverter: React.FC = () => {
 
             <Dragger
               {...uploadProps}
-              className="bg-gray-50/50 hover:bg-gray-50 transition-colors border-2 border-dashed border-gray-200 rounded-xl overflow-hidden"
-              style={{ padding: '32px 16px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
+              className="bg-gray-50/50 hover:bg-gray-50 transition-colors border-2 border-dashed border-gray-200 rounded-xl overflow-hidden px-4 py-8 flex-1 flex items-center justify-center flex-col"
             >
               {fileList.length === 0 ? (
                 <>
@@ -258,7 +257,7 @@ const ImageConverter: React.FC = () => {
                 onClick={handleConvert}
                 disabled={fileList.length === 0 || isLoading}
                 loading={isLoading}
-                style={{ backgroundColor: fileList.length === 0 ? undefined : '#405189' }}
+                style={{ backgroundColor: fileList.length === 0 ? undefined : 'hsl(var(--primary))' }}
               >
                 {isLoading ? 'Converting to WebP...' : 'Convert Image Now'}
               </Button>
@@ -289,7 +288,7 @@ const ImageConverter: React.FC = () => {
               <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50 p-8 text-center text-gray-400 min-h-[300px]">
                 {isLoading ? (
                   <>
-                    <LoadingOutlined className="text-5xl text-[#405189] mb-4" style={{ animation: 'spin 1s linear infinite' }} />
+                    <LoadingOutlined className="text-5xl text-primary mb-4 animate-spin" />
                     <p className="text-sm font-medium text-gray-500">Processing your image...</p>
                     <p className="text-xs text-gray-400 mt-1">Converting to optimized WebP format</p>
                   </>
@@ -306,8 +305,7 @@ const ImageConverter: React.FC = () => {
                   <Image
                     src={convertedImageUrl}
                     alt="Converted WebP"
-                    className="rounded-lg shadow-sm object-contain"
-                    style={{ maxHeight: '250px', width: 'auto', maxWidth: '100%' }}
+                    className="rounded-lg shadow-sm object-contain max-h-[250px] w-auto max-w-full"
                     preview={{
                       mask: <div className="text-white text-sm font-medium">Click to Preview</div>
                     }}
@@ -348,7 +346,6 @@ const ImageConverter: React.FC = () => {
         </div>
       </div>
 
-      {/* Inline keyframe animation styles */}
       <style>{`
         @keyframes fadeSlideUp {
           from {
@@ -359,10 +356,6 @@ const ImageConverter: React.FC = () => {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

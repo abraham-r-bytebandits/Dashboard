@@ -1,108 +1,104 @@
-import { useEffect, useState } from "react";
-import { Table, Button, Modal, Input, Tag, Popconfirm, message, Space } from "antd";
-import { DeleteOutlined, EyeOutlined, SearchOutlined, DownloadOutlined } from "@ant-design/icons";
-import api from "@/api/axios";
-import { useAuth } from "@/context/AuthContext";
+import { useState } from "react"
+import { Table, Button, Modal, Input, Tag, Popconfirm, message, Space } from "antd"
+import { DeleteOutlined, EyeOutlined, SearchOutlined, DownloadOutlined } from "@ant-design/icons"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { AxiosError } from "axios"
+import { apiClient } from "@/lib/apiClient"
+import { queryClient } from "@/lib/queryClient"
+import { useAuth } from "@/context/AuthContext"
+import type { ContactMessage } from "@/types"
+
+type ContactsResponse = {
+    data?: ContactMessage[]
+    records?: ContactMessage[]
+    total?: number
+    count?: number
+}
 
 export default function ContactMessagesList() {
-    const { isAdmin, isSuperAdmin } = useAuth();
-    const [contacts, setContacts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [search, setSearch] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [total, setTotal] = useState(0);
-    
-    const [selectedContact, setSelectedContact] = useState<any>(null);
-    const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
+    const { isAdmin, isSuperAdmin } = useAuth()
+    const [search, setSearch] = useState("")
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
 
-    const [exportLoading, setExportLoading] = useState(false);
+    const [selectedContact, setSelectedContact] = useState<ContactMessage | null>(null)
+    const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false)
 
-    const canDelete = isSuperAdmin || isAdmin;
+    const canDelete = isSuperAdmin || isAdmin
 
-    const handleExport = async () => {
-        try {
-            setExportLoading(true);
-            const queryParams = [];
+    const { data: contactsData, isLoading } = useQuery<ContactsResponse>({
+        queryKey: ['contacts', currentPage, pageSize, search],
+        queryFn: async () => {
+            const queryParams = []
+            queryParams.push(`page=${currentPage}`)
+            queryParams.push(`pageSize=${pageSize}`)
             if (search) {
-                queryParams.push(`search=${encodeURIComponent(search)}`);
+                queryParams.push(`search=${encodeURIComponent(search)}`)
             }
-            const res = await api.get(`/contacts/export?${queryParams.join("&")}`, {
+
+            const res = await apiClient.get(`/contacts?${queryParams.join("&")}`)
+            return res.data
+        }
+    })
+
+    const contacts = contactsData?.data || contactsData?.records || []
+    const total = contactsData?.total || contactsData?.count || 0
+
+    const deleteMutation = useMutation({
+        mutationFn: async (publicId: string) => {
+            await apiClient.delete(`/contacts/${publicId}`)
+        },
+        onSuccess: () => {
+            message.success("Contact message deleted successfully")
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+        },
+        onError: (error: AxiosError<{ message?: string }>) => {
+            message.error(error.response?.data?.message || "Failed to delete contact message")
+        }
+    })
+
+    const exportMutation = useMutation({
+        mutationFn: async () => {
+            const queryParams = []
+            if (search) {
+                queryParams.push(`search=${encodeURIComponent(search)}`)
+            }
+            const res = await apiClient.get(`/contacts/export?${queryParams.join("&")}`, {
                 responseType: 'blob'
-            });
-            
-            const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', 'contact_messages.xlsx');
-            document.body.appendChild(link);
-            link.click();
-            
-            link.parentNode?.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            message.success("Contact messages exported successfully");
-        } catch (error) {
-            message.error("Failed to export contact messages");
-        } finally {
-            setExportLoading(false);
-        }
-    };
+            })
+            return res.data
+        },
+        onSuccess: (data) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', 'contact_messages.xlsx')
+            document.body.appendChild(link)
+            link.click()
 
-    const fetchContacts = async (page = currentPage, limit = pageSize, searchQuery = search, showSpinner = true) => {
-        try {
-            if (showSpinner) setLoading(true);
-            const queryParams = [];
-            queryParams.push(`page=${page}`);
-            queryParams.push(`pageSize=${limit}`);
-            if (searchQuery) {
-                queryParams.push(`search=${encodeURIComponent(searchQuery)}`);
-            }
-            
-            const res = await api.get(`/contacts?${queryParams.join("&")}`);
-            
-            const responseData = res.data;
-            if (responseData) {
-                setContacts(responseData.data || responseData.records || []);
-                setTotal(responseData.total || responseData.count || 0);
-            }
-        } catch (error) {
-            message.error("Failed to fetch contact messages");
-        } finally {
-            if (showSpinner) setLoading(false);
+            link.parentNode?.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            message.success("Contact messages exported successfully")
+        },
+        onError: () => {
+            message.error("Failed to export contact messages")
         }
-    };
-
-    useEffect(() => {
-        // Fetch contacts on mount, page change, or search
-        fetchContacts(currentPage, pageSize, search, true);
-    }, [currentPage, pageSize, search]);
+    })
 
     const handleSearch = () => {
-        setCurrentPage(1);
-        fetchContacts(1, pageSize, search);
-    };
+        setCurrentPage(1)
+    }
 
     const handleReset = () => {
-        setSearch("");
-        setCurrentPage(1);
-        fetchContacts(1, pageSize, "");
-    };
+        setSearch("")
+        setCurrentPage(1)
+    }
 
-    const handleDelete = async (publicId: string) => {
-        try {
-            await api.delete(`/contacts/${publicId}`);
-            message.success("Contact message deleted successfully");
-            fetchContacts(currentPage, pageSize, search);
-        } catch (error: any) {
-            message.error(error.response?.data?.message || "Failed to delete contact message");
-        }
-    };
-
-    const showDetails = (contact: any) => {
-        setSelectedContact(contact);
-        setIsDetailsModalVisible(true);
-    };
+    const showDetails = (contact: ContactMessage) => {
+        setSelectedContact(contact)
+        setIsDetailsModalVisible(true)
+    }
 
     const columns = [
         {
@@ -116,7 +112,7 @@ export default function ContactMessagesList() {
         {
             title: 'Contact Details',
             key: 'contactDetails',
-            render: (_: any, record: any) => (
+            render: (_: unknown, record: ContactMessage) => (
                 <div className="flex flex-col">
                     <span className="text-sm text-gray-700">{record.email}</span>
                     {record.phone && <span className="text-xs text-gray-500">{record.phone}</span>}
@@ -128,7 +124,7 @@ export default function ContactMessagesList() {
             dataIndex: 'website',
             key: 'website',
             render: (text: string) => text ? (
-                <a href={text.startsWith('http') ? text : `http://${text}`} target="_blank" rel="noopener noreferrer" className="text-[#405189] hover:underline text-sm truncate max-w-[150px] inline-block font-medium">
+                <a href={text.startsWith('http') ? text : `http://${text}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm truncate max-w-[150px] inline-block font-medium">
                     {text}
                 </a>
             ) : '-'
@@ -148,19 +144,19 @@ export default function ContactMessagesList() {
         {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: any) => (
+            render: (_: unknown, record: ContactMessage) => (
                 <Space size="middle">
-                    <Button 
-                        type="text" 
-                        icon={<EyeOutlined />} 
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
                         onClick={() => showDetails(record)}
-                        style={{ color: "#405189" }}
+                        className="text-primary"
                     />
                     {canDelete && (
                         <Popconfirm
                             title="Delete contact message"
                             description="Are you sure to delete this contact message?"
-                            onConfirm={() => handleDelete(record.publicId || record.id)}
+                            onConfirm={() => deleteMutation.mutate(record.publicId || record.id)}
                             okText="Yes"
                             cancelText="No"
                         >
@@ -170,18 +166,17 @@ export default function ContactMessagesList() {
                 </Space>
             )
         },
-    ];
+    ]
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen w-full">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-semibold text-[#405189]">Contact Messages</h1>
-                <Button 
-                    type="primary" 
-                    icon={<DownloadOutlined />} 
-                    loading={exportLoading}
-                    onClick={handleExport}
-                    style={{ background: "#405189", borderColor: "#405189" }}
+                <h1 className="text-2xl font-semibold text-primary">Contact Messages</h1>
+                <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    loading={exportMutation.isPending}
+                    onClick={() => exportMutation.mutate()}
                 >
                     Export Excel
                 </Button>
@@ -198,10 +193,9 @@ export default function ContactMessagesList() {
                         className="flex-1"
                     />
                     <div className="flex gap-2">
-                        <Button 
-                            type="primary" 
+                        <Button
+                            type="primary"
                             onClick={handleSearch}
-                            style={{ background: "#405189", borderColor: "#405189" }}
                         >
                             Search
                         </Button>
@@ -217,7 +211,7 @@ export default function ContactMessagesList() {
                     dataSource={contacts}
                     columns={columns}
                     rowKey={(record) => record.publicId || record.id}
-                    loading={loading}
+                    loading={isLoading}
                     scroll={{ x: "max-content" }}
                     pagination={{
                         current: currentPage,
@@ -238,15 +232,14 @@ export default function ContactMessagesList() {
             </div>
 
             <Modal
-                title={<span className="text-lg font-semibold text-[#405189]">Contact Message Details</span>}
+                title={<span className="text-lg font-semibold text-primary">Contact Message Details</span>}
                 open={isDetailsModalVisible}
                 onCancel={() => setIsDetailsModalVisible(false)}
                 footer={[
-                    <Button 
-                        key="close" 
-                        type="primary" 
+                    <Button
+                        key="close"
+                        type="primary"
                         onClick={() => setIsDetailsModalVisible(false)}
-                        style={{ background: "#405189", borderColor: "#405189" }}
                     >
                         Close
                     </Button>
@@ -269,14 +262,14 @@ export default function ContactMessagesList() {
                             </div>
                             <div>
                                 <span className="text-xs text-gray-500 block font-medium">Email Address</span>
-                                <a href={`mailto:${selectedContact.email}`} className="text-[#405189] hover:underline font-semibold">
+                                <a href={`mailto:${selectedContact.email}`} className="text-primary hover:underline font-semibold">
                                     {selectedContact.email}
                                 </a>
                             </div>
                             <div>
                                 <span className="text-xs text-gray-500 block font-medium">Phone Number</span>
                                 {selectedContact.phone ? (
-                                    <a href={`tel:${selectedContact.phone}`} className="text-[#405189] hover:underline font-semibold">
+                                    <a href={`tel:${selectedContact.phone}`} className="text-primary hover:underline font-semibold">
                                         {selectedContact.phone}
                                     </a>
                                 ) : (
@@ -286,11 +279,11 @@ export default function ContactMessagesList() {
                             <div>
                                 <span className="text-xs text-gray-500 block font-medium">Website</span>
                                 {selectedContact.website ? (
-                                    <a 
-                                        href={selectedContact.website.startsWith('http') ? selectedContact.website : `http://${selectedContact.website}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="text-[#405189] hover:underline font-semibold truncate max-w-[200px] inline-block"
+                                    <a
+                                        href={selectedContact.website.startsWith('http') ? selectedContact.website : `http://${selectedContact.website}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline font-semibold truncate max-w-[200px] inline-block"
                                     >
                                         {selectedContact.website}
                                     </a>

@@ -1,23 +1,8 @@
-import { Tag, Avatar, Space, Button, message, Popconfirm } from "antd";
-import { useState } from "react";
-import api from "@/api/axios";
-import type { ColumnsType } from "antd/es/table";
-
-export interface Expense {
-    id: string;
-    publicId: string;
-    expenseId: string;
-    expenseType: string;
-    title: string;
-    category: string;
-    amount: string;
-    dueDate: string;
-    status: "PENDING" | "APPROVED" | "PAID" | "REJECTED";
-    comments?: string;
-    overdueByDays?: number;
-    paidBy?: any;
-    [key: string]: any;
-}
+import { Tag, Avatar, Space, Button, message, Popconfirm } from 'antd'
+import { useState } from 'react'
+import { apiClient } from '@/lib/apiClient'
+import type { ColumnsType } from 'antd/es/table'
+import type { Expense } from '@/types'
 
 export const getColumns = (
     isAdmin: boolean = false,
@@ -30,7 +15,7 @@ export const getColumns = (
             title: "Expense ID",
             dataIndex: "expenseId",
             key: "expenseId",
-            render: (id) => <a style={{ color: "#465189", fontWeight: 600 }}>{id}</a>,
+            render: (id) => <a className="text-primary font-semibold">{id}</a>,
         },
         {
             title: "Paid by",
@@ -72,7 +57,7 @@ export const getColumns = (
             dataIndex: "amount",
             key: "amount",
             render: (amount: string) => (
-                <span style={{ color: "#2B8879", fontWeight: 500 }}>₹{Number(amount || 0).toLocaleString()}</span>
+                <span className="text-green-600 font-medium">₹{Number(amount || 0).toLocaleString()}</span>
             ),
         },
         {
@@ -89,42 +74,34 @@ export const getColumns = (
             title: "Overdue by",
             key: "overdueByDays",
             render: (_, record) => {
-                if (record.status === 'PAID') return <span style={{ color: "#10b981", fontWeight: 500 }}>Paid</span>;
+                if (record.status === 'PAID') return <span className="text-green-600 font-medium">Paid</span>;
 
                 const diffDays = record.overdueByDays || 0;
                 if (diffDays <= 0) {
-                    return <span style={{ color: "#10b981", fontWeight: 500 }}>Not overdue</span>;
+                    return <span className="text-green-600 font-medium">Not overdue</span>;
                 }
-                return <span style={{ color: "#ef4444", fontWeight: 500 }}>{diffDays} days</span>;
+                return <span className="text-red-500 font-medium">{diffDays} days</span>;
             },
         },
         {
             title: "Status",
             dataIndex: "status",
             key: "status",
-            render: (status: Expense["status"]) => {
-                let color = "#FF0000";
-                let bg = "#F4DADA";
-                if (status === "PAID") {
-                    color = "#2B8879";
-                    bg = "#E6F5F2";
-                } else if (status === "APPROVED") {
-                    color = "#1D4ED8";
-                    bg = "#DBEAFE";
-                } else if (status === "PENDING") {
-                    color = "#D97706";
-                    bg = "#FEF3C7";
+            render: (status: string | undefined) => {
+                if (!status) return null;
+                const statusUpper = status.toUpperCase();
+
+                let className = "text-red-600 bg-red-50";
+                if (statusUpper === "PAID") {
+                    className = "text-green-700 bg-green-50";
+                } else if (statusUpper === "APPROVED") {
+                    className = "text-blue-700 bg-blue-50";
+                } else if (statusUpper === "PENDING") {
+                    className = "text-amber-600 bg-amber-50";
                 }
+
                 return (
-                    <Tag
-                        style={{
-                            color: color,
-                            backgroundColor: bg,
-                            border: "none",
-                            borderRadius: 6,
-                            fontWeight: 500,
-                        }}
-                    >
+                    <Tag className={`${className} border-none rounded-md font-medium`}>
                         {status}
                     </Tag>
                 );
@@ -143,13 +120,14 @@ export const getColumns = (
                         if (!record.publicId) return;
                         setLoading(true);
                         try {
-                            await api.patch(`/expenses/${record.publicId}/pay`);
+                            await apiClient.patch(`/expenses/${record.publicId}/pay`);
                             message.success("Expense marked as paid!");
                             onPaySuccess?.();
                             window.dispatchEvent(new CustomEvent('expensePaid'));
-                        } catch (err: any) {
+                        } catch (err: unknown) {
+                            const error = err as { response?: { data?: { message?: string } } }
                             const msg =
-                                err?.response?.data?.message ||
+                                error?.response?.data?.message ||
                                 "Failed to mark expense as paid";
                             message.error(msg);
                         } finally {
@@ -163,11 +141,7 @@ export const getColumns = (
                             loading={loading}
                             disabled={record.status === "PAID" || record.status === "REJECTED" || loading}
                             onClick={handlePay}
-                            style={{
-                                border: "1px solid black",
-                                fontSize: 12,
-                                padding: "2px 16px",
-                            }}
+                            className="border border-black text-xs px-4 py-0.5"
                         >
                             {record.status === "PAID" ? "Settled" : loading ? "Paying…" : "Pay"}
                         </Button>
@@ -180,11 +154,12 @@ export const getColumns = (
                         if (!record.publicId) return;
                         setDelLoading(true);
                         try {
-                            await api.delete(`/expenses/${record.publicId}`);
+                            await apiClient.delete(`/expenses/${record.publicId}`);
                             message.success("Expense deleted successfully!");
                             onDeleteSuccess?.();
-                        } catch (err: any) {
-                            message.error(err?.response?.data?.message || "Failed to delete expense");
+                        } catch (err: unknown) {
+                            const error = err as { response?: { data?: { message?: string } } }
+                            message.error(error?.response?.data?.message || "Failed to delete expense");
                         } finally {
                             setDelLoading(false);
                         }

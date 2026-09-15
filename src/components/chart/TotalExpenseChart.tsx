@@ -13,42 +13,59 @@ import {
 } from "recharts";
 
 
-const formatYAxis = (value: number) => `$${value / 1000}k`;
+type ChartDataPoint = {
+    label: string
+    value: number
+}
 
-const CustomDot = (props: any) => {
-    const { cx, cy, value, index, data } = props;
-    const prev = data[index - 1]?.value ?? 0;
-    const next = data[index + 1]?.value ?? 0;
+type CustomDotProps = {
+    cx?: number
+    cy?: number
+    value?: number
+    index?: number
+    data?: ChartDataPoint[]
+}
+
+const formatYAxis = (value: number) => `$${value / 1000}k`
+
+const CustomDot = (props: CustomDotProps) => {
+    const { cx, cy, value, index, data } = props
+    if (typeof index === 'undefined' || !data || typeof value === 'undefined') return null
+    const prev = data[index - 1]?.value ?? 0
+    const next = data[index + 1]?.value ?? 0
     if (value >= prev && value >= next && value > 3500) {
-        return <circle cx={cx} cy={cy} r={5} fill="#2DA89A" stroke="white" strokeWidth={2} />;
+        return <circle cx={cx} cy={cy} r={5} fill="#2DA89A" stroke="white" strokeWidth={2} />
     }
-    return null;
-};
+    return null
+}
 
-interface TotalExpenseChartProps {
-    data?: any[];
+type TotalExpenseChartProps = {
+  data?: unknown[]
 }
 
 export default function TotalExpenseChart({ data: externalData }: TotalExpenseChartProps) {
-    const [filter, setFilter] = useState<"days" | "week">("week");
+    const [filter, setFilter] = useState<"days" | "week">("week")
 
-    let chartData: any[] = [];
-    let total = 0;
+    let chartData: ChartDataPoint[] = []
+    let total = 0
 
     if (Array.isArray(externalData) && externalData.length > 0) {
-        chartData = externalData.map((d: any) => ({
-            label: d.date ? d.date.substring(5) : (d.label || ""),
-            value: Number(d.expenses ?? d.value ?? 0)
-        }));
-        total = chartData.reduce((sum, d) => sum + d.value, 0);
+        chartData = externalData.map((d: unknown) => {
+            const item = d as Record<string, unknown>
+            return {
+                label: item.date ? String(item.date).substring(5) : (item.label as string || ""),
+                value: Number(item.expenses ?? item.value ?? 0)
+            }
+        })
+        total = chartData.reduce((sum, d) => sum + d.value, 0)
     }
 
     // Apply filtering based on "week" vs "days"
-    let displayData = chartData;
+    let displayData = chartData
 
     if (filter === "week" && chartData.length > 7) {
         // Aggregate data into weekly buckets (aprox 4 weeks)
-        const weeklyData: any[] = [];
+        const weeklyData: ChartDataPoint[] = []
         const bucketSize = Math.ceil(chartData.length / 4); // Dynamic split into 4 logical weeks
         
         for (let i = 0; i < chartData.length; i += bucketSize) {
@@ -160,7 +177,7 @@ export default function TotalExpenseChart({ data: externalData }: TotalExpenseCh
                                 stroke="#2DA89A"
                                 strokeWidth={2}
                                 fill="url(#tealGradient)"
-                                dot={(props: any) => <CustomDot {...props} data={data} />}
+                                dot={(props: CustomDotProps) => <CustomDot {...props} data={data} />}
                                 activeDot={{ r: 5, fill: "#2DA89A", stroke: "white", strokeWidth: 2 }}
                             />
                         </AreaChart>
