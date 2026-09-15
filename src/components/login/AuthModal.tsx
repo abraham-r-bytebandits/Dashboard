@@ -15,7 +15,10 @@ export default function AuthModal() {
         e.preventDefault()
         try {
             await login(identifier, password, remember)
-        } catch {
+        } catch (err: any) {
+            console.error("[Login Error]", err)
+            console.error("[Login Error] Response:", err?.response?.status, err?.response?.data)
+            console.error("[Login Error] Message:", err?.message)
             alert("Login failed. Please check your credentials.")
         }
     }
