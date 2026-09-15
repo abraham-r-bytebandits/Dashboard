@@ -26,7 +26,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig): InternalAxios
 api.interceptors.response.use(
   (response) => {
     const contentType = response.headers['content-type']
-    if (contentType && contentType.includes('text/html')) {
+    if (typeof contentType === 'string' && contentType.includes('text/html')) {
       return Promise.reject(
         new AxiosError(
           'Expected JSON response, but received HTML. The API server might be down or misconfigured.',
