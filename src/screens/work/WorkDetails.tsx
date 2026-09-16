@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -136,7 +136,7 @@ export default function WorkDetails() {
     state.work.workItems.find((w) => w.id === id || (w as any).publicId === id)
   )
 
-  // 2. Fetch fresh data from API
+  // 2. Fetch fresh data from API with background polling & window focus sync
   const {
     data: apiWorkItem,
     isLoading,
@@ -157,8 +157,23 @@ export default function WorkDetails() {
       }
     },
     enabled: !!id,
-    initialData: reduxWorkItem,
+    placeholderData: reduxWorkItem,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   })
+
+  // Synchronize across tabs/windows when local storage updates
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key || e.key.includes('work_items')) {
+        refetch()
+        queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [id, refetch])
 
   const item = apiWorkItem || reduxWorkItem
 
@@ -188,21 +203,43 @@ export default function WorkDetails() {
     if (!item || !canEditMilestones) return
     const clamped = Math.max(0, Math.min(totalMilestones, newCompleted))
     dispatch(updateMilestoneProgress({ id: item.id, completed: clamped }))
+
+    // Optimistically update TanStack Query cache for immediate UI feedback
+    const updatedItem: WorkItem = {
+      ...item,
+      milestone: {
+        ...item.milestone,
+        total: totalMilestones,
+        completed: clamped,
+      },
+    }
+    queryClient.setQueryData(['work-item-detail', id], updatedItem)
+    queryClient.setQueryData<WorkItem[]>(['work-items'], (old) =>
+      old ? old.map((w) => (w.id === item.id || (w as any).publicId === item.id ? updatedItem : w)) : old
+    )
+
     setIsUpdatingMilestone(true)
     try {
       await workService.updateWorkItemMilestone(item.id, clamped)
       refetch()
       queryClient.invalidateQueries({ queryKey: ['work-items'] })
+      queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+      const pct = Math.round((clamped / totalMilestones) * 100)
       if (clamped === totalMilestones) {
-        message.success(`🎉 All milestones completed (${clamped}/${totalMilestones})!`)
+        message.success(`🎉 All milestones completed (100%)!`)
       } else {
-        message.success(`Milestone progress updated: ${clamped}/${totalMilestones} completed`)
+        message.success(`Milestone progress updated: ${pct}% (${clamped}/${totalMilestones} completed)`)
       }
     } catch {
       message.error('Failed to update milestone progress')
     } finally {
       setIsUpdatingMilestone(false)
     }
+  }
+
+  const handleSetPercent = (pct: number) => {
+    const target = Math.round((pct / 100) * totalMilestones)
+    handleUpdateMilestones(target)
   }
 
   const handleStepNext = () => {
@@ -651,11 +688,11 @@ export default function WorkDetails() {
               </div>
             </div>
 
-            {/* Milestone Progress Card - Interactive & Role-Aware */}
-            <div className="bg-card border-border/80 rounded-2xl border p-6 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Milestone Progress Card - Interactive & Role-Aware with Prominent Percentage */}
+            <div className="bg-card border-border/80 rounded-2xl border p-6 shadow-sm space-y-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <h2 className="text-foreground text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Milestone Progress
                     </h2>
@@ -672,12 +709,17 @@ export default function WorkDetails() {
                       </span>
                     )}
                   </div>
-                  <p className="text-foreground text-base font-bold mt-0.5 flex items-center gap-2">
-                    <span>{completedMilestones} of {totalMilestones} Completed ({milestonePercent}%)</span>
+                  <div className="flex items-baseline gap-3 mt-1">
+                    <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                      {milestonePercent}%
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      ({completedMilestones} of {totalMilestones} completed)
+                    </span>
                     {milestonePercent === 100 && (
-                      <span className="text-sm">🎉</span>
+                      <span className="text-base animate-bounce">🎉</span>
                     )}
-                  </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -685,21 +727,71 @@ export default function WorkDetails() {
                     className={cn(
                       'rounded-full px-3 py-1 text-xs font-bold border transition-all',
                       milestonePercent === 100
-                        ? 'bg-kanban-board-circle-green/10 text-kanban-board-circle-green border-kanban-board-circle-green/30'
+                        ? 'bg-kanban-board-circle-green/15 text-kanban-board-circle-green border-kanban-board-circle-green/30'
+                        : milestonePercent > 0
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                         : 'bg-muted text-muted-foreground border-border'
                     )}
                   >
-                    {milestonePercent === 100 ? 'Completed' : 'In Progress'}
+                    {milestonePercent === 100 ? '100% Completed' : milestonePercent > 0 ? 'In Progress' : 'Not Started'}
                   </span>
                 </div>
               </div>
 
-              {/* Interactive Segmented Progress Blocks */}
+              {/* Continuous Percentage Bar */}
               <div className="space-y-1.5">
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/60 border border-border/30">
+                  <div
+                    className={cn(
+                      'h-full transition-all duration-500 rounded-full',
+                      milestonePercent === 100
+                        ? 'bg-kanban-board-circle-green'
+                        : milestonePercent >= 50
+                        ? 'bg-linear-to-r from-blue-500 to-emerald-500'
+                        : 'bg-blue-500'
+                    )}
+                    style={{ width: `${Math.min(100, Math.max(0, milestonePercent))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Percentage Presets */}
+              {canEditMilestones && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-xs font-semibold text-muted-foreground mr-1">Quick Set:</span>
+                  {[0, 25, 50, 75, 100].map((pct) => {
+                    const isActive = milestonePercent === pct
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        disabled={isUpdatingMilestone}
+                        onClick={() => handleSetPercent(pct)}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer',
+                          isActive
+                            ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                            : 'bg-background hover:bg-muted text-foreground border-border/80'
+                        )}
+                      >
+                        {pct}%
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Interactive Segmented Progress Blocks */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span>Milestone Steps</span>
+                  <span>{completedMilestones} / {totalMilestones} steps</span>
+                </div>
                 <div className="flex items-center gap-1.5 py-1">
                   {Array.from({ length: Math.min(20, totalMilestones) }).map((_, idx) => {
                     const isCompleted = idx < completedMilestones
                     const targetStep = idx + 1
+                    const stepPercent = Math.round((targetStep / totalMilestones) * 100)
                     return (
                       <button
                         key={idx}
@@ -724,13 +816,13 @@ export default function WorkDetails() {
                         )}
                         title={
                           canEditMilestones
-                            ? `Click to set milestone to ${targetStep}/${totalMilestones}`
-                            : `Milestone ${targetStep}: ${isCompleted ? 'Completed' : 'Pending'}`
+                            ? `Click to set milestone to Step ${targetStep} (${stepPercent}%)`
+                            : `Step ${targetStep}: ${isCompleted ? 'Completed' : 'Pending'}`
                         }
                       >
                         {canEditMilestones && (
                           <span className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground text-[10px] font-mono px-1.5 py-0.5 rounded shadow-sm border border-border z-10 whitespace-nowrap">
-                            Step {targetStep}
+                            Step {targetStep} ({stepPercent}%)
                           </span>
                         )}
                       </button>
@@ -739,7 +831,7 @@ export default function WorkDetails() {
                 </div>
                 {canEditMilestones && (
                   <p className="text-muted-foreground text-[11px] italic">
-                    Tip: Click any segment directly to set completion, or use the quick actions below.
+                    Tip: Click preset percentage buttons, click any segment step, or use step increment buttons below.
                   </p>
                 )}
               </div>
@@ -783,7 +875,7 @@ export default function WorkDetails() {
                         className="text-xs h-8 gap-1.5 font-semibold bg-kanban-board-circle-green text-white hover:bg-kanban-board-circle-green/90 cursor-pointer shadow-2xs"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        Mark All Completed
+                        Mark 100% Completed
                       </Button>
                     ) : (
                       <Button
@@ -795,7 +887,7 @@ export default function WorkDetails() {
                         className="text-xs h-8 gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                       >
                         <RotateCcw className="h-3 w-3" />
-                        Reset Milestones
+                        Reset (0%)
                       </Button>
                     )}
                   </div>

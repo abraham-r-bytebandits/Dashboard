@@ -257,7 +257,11 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
       : []),
   ]
 
-  const totalMilestones = Math.max(1, Math.min(12, item.milestone.total || 1))
+  const totalMilestones = Math.max(1, item.milestone?.total || 1)
+  const completedMilestones = item.milestone?.completed || 0
+  const milestonePercent = Math.round(
+    (completedMilestones / totalMilestones) * 100
+  )
 
   return (
     <div
@@ -337,28 +341,39 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
         {stripHtml(item.description)}
       </p>
 
-      {/* Segmented Milestone Progress Bar matching screenshot */}
+      {/* Milestone Progress with Prominent Percentage */}
       <div className="mb-3">
         <div className="mb-1.5 flex items-center justify-between text-xs">
           <span className="text-muted-foreground font-medium">Milestone</span>
-          <span className="text-muted-foreground font-semibold">
-            {item.milestone.completed}/{item.milestone.total}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold transition-colors',
+                milestonePercent === 100
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : milestonePercent > 0
+                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                  : 'bg-muted text-muted-foreground'
+              )}
+            >
+              {milestonePercent}%
+            </span>
+            <span className="text-muted-foreground/70 text-[11px]">
+              ({completedMilestones}/{totalMilestones})
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {Array.from({ length: totalMilestones }).map((_, idx) => {
-            const isCompleted = idx < item.milestone.completed
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'h-1.5 flex-1 rounded-full transition-colors',
-                  isCompleted ? 'bg-kanban-board-circle-green' : 'bg-muted',
-                )}
-              />
-            )
-          })}
+        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn(
+              'h-full transition-all duration-300 rounded-full',
+              milestonePercent === 100
+                ? 'bg-kanban-board-circle-green'
+                : 'bg-blue-600'
+            )}
+            style={{ width: `${Math.min(100, milestonePercent)}%` }}
+          />
         </div>
       </div>
 

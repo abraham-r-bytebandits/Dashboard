@@ -51,16 +51,22 @@ const workSlice = createSlice({
       state.workItems.push(action.payload)
     },
     updateWorkItem: (state, action: PayloadAction<{ id: string; updates: Partial<WorkItem> }>) => {
-      const index = state.workItems.findIndex(item => item.id === action.payload.id)
+      const index = state.workItems.findIndex(
+        item => item.id === action.payload.id || (item as any).publicId === action.payload.id || (item as any).customId === action.payload.id
+      )
       if (index !== -1) {
         state.workItems[index] = { ...state.workItems[index], ...action.payload.updates }
       }
     },
     deleteWorkItem: (state, action: PayloadAction<string>) => {
-      state.workItems = state.workItems.filter(item => item.id !== action.payload)
+      state.workItems = state.workItems.filter(
+        item => item.id !== action.payload && (item as any).publicId !== action.payload && (item as any).customId !== action.payload
+      )
     },
     moveWorkItem: (state, action: PayloadAction<{ id: string; status?: WorkStatus; priority?: Priority }>) => {
-      const index = state.workItems.findIndex(item => item.id === action.payload.id)
+      const index = state.workItems.findIndex(
+        item => item.id === action.payload.id || (item as any).publicId === action.payload.id || (item as any).customId === action.payload.id
+      )
       if (index !== -1) {
         if (action.payload.status) {
           state.workItems[index].status = action.payload.status
@@ -74,7 +80,9 @@ const workSlice = createSlice({
       state,
       action: PayloadAction<{ id: string; completed: number; total?: number }>
     ) => {
-      const index = state.workItems.findIndex(item => item.id === action.payload.id)
+      const index = state.workItems.findIndex(
+        item => item.id === action.payload.id || (item as any).publicId === action.payload.id || (item as any).customId === action.payload.id
+      )
       if (index !== -1) {
         state.workItems[index].milestone = {
           completed: action.payload.completed,

@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/apiClient'
+import { queryClient } from '@/lib/queryClient'
 import type { WorkItem, WorkStatus, Priority } from '@/types/work'
 
 const WORK_STORAGE_KEY = 'work-assignment-state'
@@ -94,9 +95,11 @@ export const workService = {
 
     const items = getStoredWorkItems()
     const updated = items.map((item) =>
-      item.id === id ? { ...item, status } : item
+      item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, status } : item
     )
     saveStoredWorkItems(updated)
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
   },
 
   updateWorkItemPriority: async (
@@ -111,9 +114,11 @@ export const workService = {
 
     const items = getStoredWorkItems()
     const updated = items.map((item) =>
-      item.id === id ? { ...item, priority } : item
+      item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, priority } : item
     )
     saveStoredWorkItems(updated)
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
   },
 
   updateWorkItemMilestone: async (
@@ -130,8 +135,10 @@ export const workService = {
       if (updatedItem) {
         const items = getStoredWorkItems()
         saveStoredWorkItems(
-          items.map((item) => (item.id === id ? { ...item, ...updatedItem } : item))
+          items.map((item) => (item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, ...updatedItem } : item))
         )
+        queryClient.invalidateQueries({ queryKey: ['work-items'] })
+        queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
         return updatedItem
       }
     } catch {
@@ -141,7 +148,7 @@ export const workService = {
     const items = getStoredWorkItems()
     let updatedItem: WorkItem | null = null
     const updated = items.map((item) => {
-      if (item.id === id) {
+      if (item.id === id || (item as any).publicId === id || (item as any).customId === id) {
         updatedItem = {
           ...item,
           milestone: {
@@ -154,6 +161,8 @@ export const workService = {
       return item
     })
     saveStoredWorkItems(updated)
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
     return updatedItem
   },
 
@@ -165,7 +174,8 @@ export const workService = {
     }
 
     const items = getStoredWorkItems()
-    saveStoredWorkItems(items.filter((item) => item.id !== id))
+    saveStoredWorkItems(items.filter((item) => item.id !== id && (item as any).publicId !== id && (item as any).customId !== id))
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
   },
 }
 

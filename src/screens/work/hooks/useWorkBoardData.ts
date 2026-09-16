@@ -24,10 +24,13 @@ export function useWorkBoardData(mode: BoardMode) {
     isAdmin || isSuperAdmin ? 'all' : 'assigned'
   )
 
-  // 1. Fetch work items from API
+  // 1. Fetch work items from API with real-time background sync
   const { data: apiWorkItems = [], isLoading: isWorksLoading } = useQuery<WorkItem[]>({
     queryKey: ['work-items'],
     queryFn: () => workService.getWorkItems(),
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   })
 
   // 2. Fetch users/team members from API
@@ -42,20 +45,38 @@ export function useWorkBoardData(mode: BoardMode) {
         return []
       }
     },
+    staleTime: 60_000,
   })
 
   // Synchronize API data to Redux for optimistic drag-and-drop
   useEffect(() => {
-    if (apiWorkItems.length > 0) {
+    if (apiWorkItems && apiWorkItems.length > 0) {
       dispatch(setWorkItems(apiWorkItems))
     }
   }, [apiWorkItems, dispatch])
 
   useEffect(() => {
-    if (apiUsers.length > 0) {
+    if (apiUsers && apiUsers.length > 0) {
       dispatch(setTeamDirectory(apiUsers))
     }
   }, [apiUsers, dispatch])
+
+  // Listen to window storage events for instant cross-tab sync without page reload
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'work-assignment-state' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue)
+          if (Array.isArray(parsed.workItems)) {
+            dispatch(setWorkItems(parsed.workItems))
+            queryClient.invalidateQueries({ queryKey: ['work-items'] })
+          }
+        } catch {}
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [dispatch])
 
   const workState = useAppSelector((state) => state.work)
   const {
