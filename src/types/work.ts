@@ -22,16 +22,29 @@ export type Milestone = {
   total: number
 }
 
+export type WorkAttachment = {
+  id: string
+  name: string
+  size: number
+  type: string
+  url: string
+  uploadedAt: string
+}
+
 export type WorkItem = {
   id: string
   title: string
   description: string
   priority: Priority
   status: WorkStatus
-  dueDate: string
+  dueDate?: string
   assignees: Assignee[]
   milestone: Milestone
   attachmentsCount: number
+  attachments?: WorkAttachment[]
   commentsCount: number
   createdAt: string
+  updatedAt?: string
+  publicId?: string
+  createdByPublicId?: string
 }

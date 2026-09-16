@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import {
   Table,
   Button,
@@ -148,8 +149,18 @@ export default function UserManagement() {
       form.resetFields()
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
-    onError: (error: AxiosError<{ message?: string }>) => {
-      message.error(error.response?.data?.message || 'Failed to create user')
+    onError: (error: AxiosError<{ message?: string; errors?: Record<string, string> }>) => {
+      const data = error.response?.data
+      let errMsg = data?.message || 'Failed to create user'
+      if (data?.errors && typeof data.errors === 'object') {
+        const detailList = Object.entries(data.errors)
+          .map(([field, msg]) => `${field}: ${msg}`)
+          .join(', ')
+        if (detailList) {
+          errMsg = `${errMsg} (${detailList})`
+        }
+      }
+      message.error(errMsg)
     },
   })
 
@@ -334,7 +345,7 @@ export default function UserManagement() {
   ]
 
   if (!isSuperAdmin) {
-    return null
+    return <Navigate to="/" replace />
   }
 
   return (
@@ -396,11 +407,19 @@ export default function UserManagement() {
         <Form
           layout="vertical"
           form={form}
-          onFinish={(values) => createMutation.mutate(values)}
+          onFinish={(values) => {
+            const rawPhone = values.phone ? String(values.phone).replace(/\D/g, '').slice(0, 10) : undefined
+            const payload = {
+              ...values,
+              affiliation: values.affiliation ? String(values.affiliation).toLowerCase() : 'internal',
+              phone: rawPhone && rawPhone.length === 10 ? rawPhone : undefined,
+            }
+            createMutation.mutate(payload)
+          }}
           className="mt-4"
           initialValues={{
             role: 'USER',
-            affiliation: 'INTERNAL',
+            affiliation: 'internal',
             functionalRole: functionalRoles[0]?.name,
           }}
         >
@@ -441,13 +460,13 @@ export default function UserManagement() {
           >
             <Radio.Group className="w-full grid grid-cols-2 gap-3">
               <Radio.Button
-                value="INTERNAL"
+                value="internal"
                 className="h-12 flex items-center justify-center text-xs font-semibold rounded-lg"
               >
                 <BankOutlined className="mr-1.5 text-blue-600" /> Internal Employee
               </Radio.Button>
               <Radio.Button
-                value="EXTERNAL"
+                value="external"
                 className="h-12 flex items-center justify-center text-xs font-semibold rounded-lg"
               >
                 <GlobalOutlined className="mr-1.5 text-purple-600" /> External Partner
@@ -486,14 +505,62 @@ export default function UserManagement() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="phone" label="Phone Number (Optional)">
-              <Input placeholder="+919876543210" />
+            <Form.Item
+              name="phone"
+              label="Phone Number (10 Digits)"
+              extra="Only 10 digits allowed"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!value || String(value).trim() === '') {
+                      return Promise.resolve()
+                    }
+                    const digits = String(value).replace(/\D/g, '')
+                    if (digits.length !== 10) {
+                      return Promise.reject(new Error('Phone number must be exactly 10 digits'))
+                    }
+                    return Promise.resolve()
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="9876543210"
+                maxLength={10}
+                onKeyDown={(e) => {
+                  const allowedControlKeys = [
+                    'Backspace',
+                    'Delete',
+                    'ArrowLeft',
+                    'ArrowRight',
+                    'Tab',
+                    'Enter',
+                  ]
+                  if (
+                    allowedControlKeys.includes(e.key) ||
+                    e.ctrlKey ||
+                    e.metaKey
+                  ) {
+                    return
+                  }
+                  if (!/^\d$/.test(e.key)) {
+                    e.preventDefault()
+                  }
+                }}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  form.setFieldsValue({ phone: cleaned })
+                }}
+              />
             </Form.Item>
 
             <Form.Item
               name="password"
               label="Initial Password"
-              rules={[{ required: true, message: 'Password is required' }]}
+              rules={[
+                { required: true, message: 'Password is required' },
+                { min: 6, message: 'Password must be at least 6 characters' },
+              ]}
             >
               <Input.Password placeholder="SecurePass123!" />
             </Form.Item>

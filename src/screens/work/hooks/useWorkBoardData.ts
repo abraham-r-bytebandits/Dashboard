@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { useAuth } from '@/context/AuthContext'
 import {
   setWorkItems,
   setTeamDirectory,
@@ -16,6 +17,12 @@ type BoardMode = 'status' | 'priority'
 
 export function useWorkBoardData(mode: BoardMode) {
   const dispatch = useAppDispatch()
+  const { user, isAdmin, isSuperAdmin } = useAuth()
+
+  // Regular users default to their assigned tasks; admins default to all tasks
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'assigned'>(
+    isAdmin || isSuperAdmin ? 'all' : 'assigned'
+  )
 
   // 1. Fetch work items from API
   const { data: apiWorkItems = [], isLoading: isWorksLoading } = useQuery<WorkItem[]>({
@@ -85,7 +92,24 @@ export function useWorkBoardData(mode: BoardMode) {
       affiliationFilter === 'all' ||
       item.assignees.some((assignee) => assignee.affiliation === affiliationFilter)
 
-    return matchesSearch && matchesDimension && matchesRole && matchesAffiliation
+    const matchesScope =
+      scopeFilter === 'all' ||
+      !user ||
+      item.assignees.some(
+        (assignee) =>
+          (assignee.email && user.email && assignee.email.toLowerCase() === user.email.toLowerCase()) ||
+          assignee.id === user.id ||
+          assignee.id === user.publicId
+      ) ||
+      (item as any).createdByPublicId === user.publicId
+
+    return (
+      matchesSearch &&
+      matchesDimension &&
+      matchesRole &&
+      matchesAffiliation &&
+      matchesScope
+    )
   })
 
   const handleMoveItem = async (
@@ -114,6 +138,8 @@ export function useWorkBoardData(mode: BoardMode) {
     activeDirectory,
     isLoading: isWorksLoading,
     handleMoveItem,
+    scopeFilter,
+    setScopeFilter,
     filters: {
       searchQuery,
       priorityFilter,

@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarGroup>
             </SidebarContent>
             <SidebarFooter>
-                {user?.profile && <NavUser user={user} />}
+                {user?.profile && <NavUser user={user} variant="sidebar" />}
             </SidebarFooter>
         </Sidebar>
     )

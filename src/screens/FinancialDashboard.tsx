@@ -1,19 +1,13 @@
-import { TrendingUp, TrendingDown, Bell, LogOut } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConfigProvider } from 'antd'
 import 'antd/dist/reset.css'
 import { ChartBarHorizontal } from '@/components/chart/HorizontalBarChart'
 import DashboardTable from '@/components/table/DashboardTable'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { DatePickerWithRange } from '@/components/DatePickerWithRange'
-import { Field } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { SearchOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
-import { useAuth } from '@/context/AuthContext'
 import ResponsiveSidebar from '@/components/Sidebar/ResponsiveSidebar'
 import SpendBreakdown from '@/components/chart/SpendBreakdownChart'
 import TotalExpenseChart from '@/components/chart/TotalExpenseChart'
@@ -61,7 +55,6 @@ const SummaryCard = ({
 );
 
 const FinancialDashboard = () => {
-    const { user, logout } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(() => {
         if (typeof window !== 'undefined') {
             return window.innerWidth >= 2880
@@ -114,61 +107,11 @@ const FinancialDashboard = () => {
         <div className="flex w-full min-h-screen bg-[#F3F3F9]">
             {/* Main Content Area */}
             <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'xl:mr-[250px]' : ''}`}>
-                <div className="space-y-2 relative overflow-x-hidden">
-                    <div className='bg-white'>
-                        <div className='flex items-center justify-between gap-4'>
-                            <div className='flex items-center gap-4'>
-                                <div className="p-2">
-                                    <SidebarTrigger />
-                                </div>
-                                <Field orientation="horizontal" className="max-w-[400px]">
-                                    <div className="relative w-full">
-                                        <SearchOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                                        <Input
-                                            type="search"
-                                            placeholder="Search here..."
-                                            className="pl-10 border-none"
-                                        />
-                                    </div>
-                                </Field>
-                            </div>
-
-                            <div className='flex items-center gap-6'>
-                                <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
-                                    <Bell className="h-5 w-5" />
-                                    <span className="text-sm font-medium">Notifications</span>
-                                </button>
-
-                                <div className='bg-[#F3F3F9] flex items-center gap-4 px-4 py-2'>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user?.profile?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.profile?.firstName || 'User')}&background=F9B610&color=fff`} alt={user?.profile?.firstName || 'User'} />
-                                            <AvatarFallback className="bg-amber-400 text-white text-sm font-semibold">
-                                                {user?.profile?.firstName?.charAt(0)?.toUpperCase() || 'U'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-[#405189]">{user?.profile?.firstName || 'User'}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="h-6 w-px bg-gray-300" />
-
-                                    <button
-                                        onClick={logout}
-                                        className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors"
-                                    >
-                                        <LogOut className="h-4 w-4" />
-                                        <span className="text-sm font-medium">Log out</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className=''>
-                        <div className="flex flex-col px-4 md:px-6 p-4 md:p-6 sm:flex-row sm:items-center justify-between gap-4 bg-white m-8 rounded-xl">
+                <div className="space-y-4 relative overflow-x-hidden p-4 md:p-6">
+                    <div>
+                        <div className="flex flex-col px-4 md:px-6 p-4 md:p-6 sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl shadow-xs">
                             <div className="flex items-center justify-center gap-4">
-                                <h1 className="text-[32px] font-extrabold text-[#000000]">
+                                <h1 className="text-[28px] md:text-[32px] font-extrabold text-[#000000]">
                                     Expenditure Control Center
                                 </h1>
                             </div>
@@ -185,7 +128,7 @@ const FinancialDashboard = () => {
                             </div>
                         </div>
 
-                        <div className="px-8 space-y-6">
+                        <div className="pt-6 space-y-6">
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                 <div className="lg:col-span-4 bg-white rounded-xl border border-gray-100 p-6 shadow-sm h-full flex flex-col">
                                     <div className="flex justify-between items-start mb-3">

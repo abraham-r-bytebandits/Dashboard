@@ -20,6 +20,9 @@ import ContactMessagesList from './screens/admin/ContactMessagesList'
 import StatusBoard from './screens/work/StatusBoard'
 import ImpactBoard from './screens/work/ImpactBoard'
 import CreateAssessment from './screens/work/CreateAssessment'
+import WorkDetails from './screens/work/WorkDetails'
+
+import { TopNavbar } from './components/Navbar/TopNavbar'
 
 function MainArea() {
   return (
@@ -36,6 +39,8 @@ function MainArea() {
       <Route path="/work/status-board" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><StatusBoard /></ProtectedRoute>} />
       <Route path="/work/impact-board" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><ImpactBoard /></ProtectedRoute>} />
       <Route path="/work/create" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><CreateAssessment /></ProtectedRoute>} />
+      <Route path="/work/details/:id" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><WorkDetails /></ProtectedRoute>} />
+      <Route path="/work/assessment/:id" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'USER']}><WorkDetails /></ProtectedRoute>} />
       <Route path="/work-assignment" element={<Navigate to="/work/status-board" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -57,9 +62,12 @@ function AppContent() {
         <SidebarProvider>
           <div className="flex min-h-screen w-full bg-[#f8fafc]">
             <AppSidebar />
-            <main className="flex-1 overflow-y-auto flex">
-              <MainArea />
-            </main>
+            <div className="flex flex-1 flex-col min-w-0">
+              <TopNavbar />
+              <main className="flex-1 overflow-y-auto flex flex-col">
+                <MainArea />
+              </main>
+            </div>
           </div>
         </SidebarProvider>
       ) : (
@@ -74,11 +82,11 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
+        <Router>
+          <AuthProvider>
             <AppContent />
-          </Router>
-        </AuthProvider>
+          </AuthProvider>
+        </Router>
       </QueryClientProvider>
     </Provider>
   )

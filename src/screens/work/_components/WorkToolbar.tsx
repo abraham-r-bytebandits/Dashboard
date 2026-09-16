@@ -1,4 +1,4 @@
-import { Search, Plus, Filter, LayoutGrid, Zap } from 'lucide-react'
+import { Search, Plus, Filter, LayoutGrid, Zap, Star, Users } from 'lucide-react'
 import { Select } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -21,6 +21,8 @@ type WorkToolbarProps = {
   currentBoard: 'status' | 'priority'
   searchQuery: string
   onSearchChange: (query: string) => void
+  scopeFilter?: 'all' | 'assigned'
+  onScopeChange?: (scope: 'all' | 'assigned') => void
   priorityFilter?: Priority | 'all'
   onPriorityChange?: (priority: Priority | 'all') => void
   statusFilter?: WorkStatus | 'all'
@@ -35,6 +37,8 @@ export function WorkToolbar({
   currentBoard,
   searchQuery,
   onSearchChange,
+  scopeFilter = 'all',
+  onScopeChange,
   priorityFilter = 'all',
   onPriorityChange,
   statusFilter = 'all',
@@ -67,13 +71,13 @@ export function WorkToolbar({
             variant="ghost"
             size="sm"
             className={cn(
-              'gap-2 text-xs font-semibold',
+              'gap-2 text-xs font-semibold cursor-pointer transition-all',
               currentBoard === 'status'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-kanban-board-circle-blue text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
             )}
           >
-            <LayoutGrid className="h-3.5 w-3.5 text-kanban-board-circle-blue" />
+            <LayoutGrid className="h-3.5 w-3.5" />
             Status Board
           </Button>
           <Button
@@ -81,16 +85,52 @@ export function WorkToolbar({
             variant="ghost"
             size="sm"
             className={cn(
-              'gap-2 text-xs font-semibold',
+              'gap-2 text-xs font-semibold cursor-pointer transition-all',
               currentBoard === 'priority'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-kanban-board-circle-yellow text-slate-950 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
             )}
           >
-            <Zap className="h-3.5 w-3.5 text-kanban-board-circle-yellow" />
+            <Zap className="h-3.5 w-3.5" />
             Impact Board
           </Button>
         </div>
+
+        {/* Scope Switcher: Assigned to Me vs All Tasks */}
+        {onScopeChange && (
+          <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onScopeChange('assigned')}
+              className={cn(
+                'gap-1.5 text-xs font-semibold cursor-pointer transition-all',
+                scopeFilter === 'assigned'
+                  ? 'bg-card text-foreground shadow-xs border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
+              )}
+            >
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              Assigned to Me
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onScopeChange('all')}
+              className={cn(
+                'gap-1.5 text-xs font-semibold cursor-pointer transition-all',
+                scopeFilter === 'all'
+                  ? 'bg-card text-foreground shadow-xs border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
+              )}
+            >
+              <Users className="h-3.5 w-3.5" />
+              All Tasks
+            </Button>
+          </div>
+        )}
 
         {/* Search & Create Button */}
         <div className="flex flex-1 min-w-72 items-center gap-3 justify-end">
@@ -107,9 +147,13 @@ export function WorkToolbar({
 
           <Button
             onClick={() => navigate('/work/create')}
-            variant="default"
             size="sm"
-            className="gap-1.5 text-xs shrink-0"
+            className={cn(
+              'gap-1.5 text-xs shrink-0 cursor-pointer transition-all shadow-sm',
+              currentBoard === 'status'
+                ? 'bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90 font-medium'
+                : 'bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90 font-semibold',
+            )}
           >
             <Plus className="h-4 w-4" />
             Create Assessment

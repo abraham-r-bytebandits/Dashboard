@@ -19,8 +19,15 @@ export default function ImpactBoard() {
   const navigate = useNavigate()
   const jsLoaded = useJsLoaded()
 
-  const { filteredItems, activeDirectory, isLoading, handleMoveItem, filters } =
-    useWorkBoardData('priority')
+  const {
+    filteredItems,
+    activeDirectory,
+    isLoading,
+    handleMoveItem,
+    scopeFilter,
+    setScopeFilter,
+    filters,
+  } = useWorkBoardData('priority')
 
   const { searchQuery, statusFilter, roleFilter, affiliationFilter } = filters
 
@@ -42,17 +49,13 @@ export default function ImpactBoard() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-kanban-board-circle-yellow text-primary-foreground shadow-sm">
+              <div className="flex h-8 w-8 -mt-2 items-center justify-center rounded-lg bg-kanban-board-circle-yellow text-primary-foreground shadow-sm">
                 <Zap className="h-4 w-4" />
               </div>
               <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Impact Board: Priority Check
               </h1>
             </div>
-            <p className="text-muted-foreground text-xs mt-1">
-              Calibrate and re-prioritize work impact across High, Medium, and
-              Low priorities.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -76,12 +79,11 @@ export default function ImpactBoard() {
 
             <Button
               onClick={() => navigate('/work/create')}
-              variant="outline"
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90 shadow-sm cursor-pointer font-semibold"
             >
               <Plus className="h-3.5 w-3.5" />
-              Invite
+              Create Assessment
             </Button>
           </div>
         </div>
@@ -91,6 +93,8 @@ export default function ImpactBoard() {
           currentBoard="priority"
           searchQuery={searchQuery}
           onSearchChange={(q) => dispatch(setSearchQuery(q))}
+          scopeFilter={scopeFilter}
+          onScopeChange={setScopeFilter}
           statusFilter={statusFilter}
           onStatusChange={(s) => dispatch(setStatusFilter(s))}
           roleFilter={roleFilter}

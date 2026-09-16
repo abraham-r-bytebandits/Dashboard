@@ -58,6 +58,7 @@ export function useProfile() {
 
 export function useLogin() {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
 
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
@@ -81,6 +82,7 @@ export function useLogin() {
       dispatch(setUser(userData as User))
       dispatch(setShowModal(false))
       queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      navigate('/', { replace: true })
     },
   })
 }

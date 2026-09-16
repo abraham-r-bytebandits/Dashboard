@@ -61,6 +61,7 @@ export const workService = {
       assignees: data.assignees || [],
       milestone: data.milestone || { completed: 0, total: 1 },
       attachmentsCount: data.attachmentsCount || 0,
+      attachments: data.attachments || [],
       commentsCount: data.commentsCount || 0,
       createdAt: new Date().toISOString(),
     }
@@ -115,6 +116,47 @@ export const workService = {
     saveStoredWorkItems(updated)
   },
 
+  updateWorkItemMilestone: async (
+    id: string,
+    completed: number,
+    total?: number
+  ): Promise<WorkItem | null> => {
+    try {
+      const res = await apiClient.patch(`/work-items/${id}/milestone`, {
+        completed,
+        total,
+      })
+      const updatedItem = res.data?.data || res.data
+      if (updatedItem) {
+        const items = getStoredWorkItems()
+        saveStoredWorkItems(
+          items.map((item) => (item.id === id ? { ...item, ...updatedItem } : item))
+        )
+        return updatedItem
+      }
+    } catch {
+      // Backend fallback
+    }
+
+    const items = getStoredWorkItems()
+    let updatedItem: WorkItem | null = null
+    const updated = items.map((item) => {
+      if (item.id === id) {
+        updatedItem = {
+          ...item,
+          milestone: {
+            completed,
+            total: total !== undefined ? total : item.milestone.total,
+          },
+        }
+        return updatedItem
+      }
+      return item
+    })
+    saveStoredWorkItems(updated)
+    return updatedItem
+  },
+
   deleteWorkItem: async (id: string): Promise<void> => {
     try {
       await apiClient.delete(`/work-items/${id}`)
@@ -126,3 +168,4 @@ export const workService = {
     saveStoredWorkItems(items.filter((item) => item.id !== id))
   },
 }
+

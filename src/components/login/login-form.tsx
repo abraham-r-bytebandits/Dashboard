@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import { loginSchema, type LoginFormValues } from './login.schema'
 import { message } from 'antd'
 
 export default function LoginForm() {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -43,6 +45,7 @@ export default function LoginForm() {
 
       await loginMutation.mutateAsync(payload)
       message.success('Login successful')
+      navigate('/', { replace: true })
     } catch {
       message.error('Login failed. Please check your credentials.')
     }

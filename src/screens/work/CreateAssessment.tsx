@@ -2,16 +2,25 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
-  Calendar,
+  Check,
   CheckCircle2,
+  ChevronDown,
+  Download,
+  File,
+  FileText,
   Flag,
+  Image as ImageIcon,
   Layers,
+  Paperclip,
   Plus,
+  UploadCloud,
   UserPlus,
   Users,
   Building2,
   Globe,
   Sparkles,
+  X,
+  Zap,
 } from 'lucide-react'
 import { message } from 'antd'
 import { useQuery } from '@tanstack/react-query'
@@ -28,9 +37,17 @@ import type {
   UserAffiliation,
   Assignee,
   WorkItem,
+  WorkAttachment,
 } from '@/types/work'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 export default function CreateAssessment() {
   const navigate = useNavigate()
@@ -39,6 +56,7 @@ export default function CreateAssessment() {
 
   const initialStatus = (searchParams.get('status') as WorkStatus) || 'new'
   const initialPriority = (searchParams.get('priority') as Priority) || 'medium'
+  const [primaryTarget, setPrimaryTarget] = useState<'status' | 'priority'>('status')
 
   const { data: functionalRoles = [] } = useQuery({
     queryKey: ['functional-roles'],
@@ -65,17 +83,66 @@ export default function CreateAssessment() {
   // Form State
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [dueDate, setDueDate] = useState(
-    () =>
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-  )
   const [priority, setPriority] = useState<Priority>(initialPriority)
   const [status, setStatus] = useState<WorkStatus>(initialStatus)
   const [milestoneTotal, setMilestoneTotal] = useState(4)
   const [milestoneCompleted, setMilestoneCompleted] = useState(0)
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
+  const selectedAssignees = teamDirectory.filter((m) =>
+    selectedAssigneeIds.includes(m.id),
+  )
+
+  // Attachments State
+  const [attachments, setAttachments] = useState<WorkAttachment[]>([])
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const [previewImage, setPreviewImage] = useState<{
+    url: string
+    name: string
+  } | null>(null)
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+  }
+
+  const handleFileUpload = (files: FileList | File[]) => {
+    const fileArray = Array.from(files)
+    if (fileArray.length === 0) return
+
+    fileArray.forEach((file) => {
+      // 25MB limit
+      if (file.size > 25 * 1024 * 1024) {
+        message.error(`File "${file.name}" exceeds 25MB limit`)
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const dataUrl = (e.target?.result as string) || ''
+        const newAttachment: WorkAttachment = {
+          id: `att-${crypto.randomUUID()}`,
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          url: dataUrl,
+          uploadedAt: new Date().toISOString(),
+        }
+        setAttachments((prev) => [...prev, newAttachment])
+        message.success(`Attached ${file.name}`)
+      }
+      reader.onerror = () => {
+        message.error(`Failed to read file ${file.name}`)
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id))
+  }
 
   // New Collaborator Modal / Inline Form State
   const [showAddCollaborator, setShowAddCollaborator] = useState(false)
@@ -141,13 +208,13 @@ export default function CreateAssessment() {
       description: description.trim(),
       priority,
       status,
-      dueDate,
       assignees: selectedAssignees,
       milestone: {
         completed: Number(milestoneCompleted) || 0,
         total: Number(milestoneTotal) || 1,
       },
-      attachmentsCount: 0,
+      attachmentsCount: attachments.length,
+      attachments: attachments,
       commentsCount: 0,
       createdAt: new Date().toISOString(),
     }
@@ -169,38 +236,140 @@ export default function CreateAssessment() {
     }
   }
 
-  return (
-    <div className="min-h-screen w-full overflow-y-auto bg-muted/20 p-6 md:p-8">
-      <div className="mx-auto max-w-4xl">
-        {/* Navigation & Header */}
-        <div className="mb-6">
-          <Button
-            onClick={() => navigate('/work/status-board')}
-            variant="ghost"
-            size="sm"
-            className="mb-4 gap-1.5 text-xs"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Boards
-          </Button>
+  const renderSaveActions = (size: 'sm' | 'default' = 'sm') => (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        onClick={() => navigate('/work/status-board')}
+        variant="outline"
+        size={size}
+        className="text-xs cursor-pointer"
+      >
+        Cancel
+      </Button>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-foreground text-2xl font-bold tracking-tight">
-                Create Work Assessment
-              </h1>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                Define work specifications, calibrate priority check, configure
-                milestones, and designate roles.
-              </p>
+      <div className="inline-flex items-center rounded-lg shadow-xs overflow-hidden">
+        {/* Main Action Button */}
+        <Button
+          type="button"
+          onClick={() => handleSubmit(primaryTarget)}
+          size={size}
+          className={cn(
+            'rounded-r-none gap-1.5 text-xs font-medium cursor-pointer border-r',
+            primaryTarget === 'status'
+              ? 'bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90 border-white/20'
+              : 'bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90 font-semibold border-black/10',
+          )}
+        >
+          {primaryTarget === 'status' ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Save & View on Status Board
+            </>
+          ) : (
+            <>
+              <Zap className="h-3.5 w-3.5" />
+              Save & View on Impact Board
+            </>
+          )}
+        </Button>
+
+        {/* Dropdown Chevron for Alternate Save Target */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size={size}
+              className={cn(
+                'rounded-l-none px-2 cursor-pointer',
+                primaryTarget === 'status'
+                  ? 'bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90'
+                  : 'bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90',
+              )}
+              title="More save options"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-64 p-1.5 shadow-lg border border-border bg-popover z-50"
+          >
+            <DropdownMenuItem
+              onClick={() => {
+                setPrimaryTarget('status')
+                handleSubmit('status')
+              }}
+              className="cursor-pointer gap-2.5 p-2.5 rounded-md hover:bg-accent focus:bg-accent"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kanban-board-circle-blue/15 text-kanban-board-circle-blue">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-semibold text-foreground">
+                  Save & View on Status Board
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Open workflow stages Kanban
+                </span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setPrimaryTarget('priority')
+                handleSubmit('priority')
+              }}
+              className="cursor-pointer gap-2.5 p-2.5 rounded-md hover:bg-accent focus:bg-accent"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kanban-board-circle-yellow/15 text-kanban-board-circle-yellow">
+                <Zap className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-semibold text-foreground">
+                  Save & View on Impact Board
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Open priority calibration matrix
+                </span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen w-full flex-1 overflow-y-auto bg-muted/20 p-6 lg:p-8">
+      <div className="w-full space-y-6">
+        {/* Navigation & Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Button
+              onClick={() => navigate('/work/status-board')}
+              variant="ghost"
+              size="sm"
+              className="mb-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Boards
+            </Button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kanban-board-circle-blue text-white shadow-sm">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-foreground text-2xl font-bold tracking-tight">
+                  Create Work Assessment
+                </h1>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-6">
+          {/* Quick Action Header Buttons */}
+          {renderSaveActions('sm')}
+        </div>
           {/* Card 1: Work Overview */}
           <div className="bg-card border-border rounded-xl border p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2 border-b border-border/50 pb-3">
@@ -228,47 +397,28 @@ export default function CreateAssessment() {
                 <label className="text-foreground mb-1.5 block text-xs font-medium">
                   Description & Context
                 </label>
-                <textarea
-                  rows={3}
-                  placeholder="Provide scope of work, technical requirements, acceptance criteria..."
+                <RichTextEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="border-input focus-visible:ring-ring w-full rounded-md border bg-background p-3 text-sm outline-none transition-colors focus-visible:ring-2"
+                  onChange={setDescription}
+                  placeholder="Provide scope of work, technical requirements, acceptance criteria..."
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="text-foreground mb-1.5 block text-xs font-medium">
-                    Target Due Date
-                  </label>
-                  <div className="relative">
-                    <Calendar className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="border-input focus-visible:ring-ring h-10 w-full rounded-md border bg-background pl-9 pr-3 text-xs outline-none transition-colors focus-visible:ring-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-foreground mb-1.5 block text-xs font-medium">
-                    Initial Workflow Stage (Status Board)
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as WorkStatus)}
-                    className="border-input focus-visible:ring-ring h-10 w-full rounded-md border bg-background px-3 text-xs outline-none transition-colors focus-visible:ring-2"
-                  >
-                    {WORK_STATUS_OPTIONS_WITH_DESC.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label} — {opt.desc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="text-foreground mb-1.5 block text-xs font-medium">
+                  Initial Workflow Stage (Status Board)
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as WorkStatus)}
+                  className="border-input focus-visible:ring-ring h-10 w-full rounded-md border bg-background px-3 text-xs outline-none transition-colors focus-visible:ring-2"
+                >
+                  {WORK_STATUS_OPTIONS_WITH_DESC.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label} — {opt.desc}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -544,124 +694,423 @@ export default function CreateAssessment() {
               </form>
             )}
 
-            {/* Select Assignees from Directory */}
-            <div>
-              <p className="text-muted-foreground mb-3 text-xs">
-                Select one or more assignees. Each person's role (Developer,
-                Marketing, etc.) and affiliation (Internal vs External) will
-                appear on the card.
-              </p>
-
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                {teamDirectory.map((member) => {
-                  const isSelected = selectedAssigneeIds.includes(member.id)
-                  return (
-                    <div
-                      key={member.id}
-                      onClick={() => handleToggleAssignee(member.id)}
-                      className={cn(
-                        'cursor-pointer rounded-lg border p-3 transition-all flex items-center gap-3',
-                        isSelected
-                          ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                          : 'border-border bg-background hover:bg-muted/40',
-                      )}
-                    >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                        {member.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="truncate text-xs font-semibold text-foreground">
-                            {member.name}
-                          </p>
-                          {isSelected && (
-                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[11px] font-medium text-muted-foreground">
-                            {member.role}
-                          </span>
-                          <span className="text-muted-foreground/60 text-[10px]">
-                            •
-                          </span>
-                          <span
-                            className={cn(
-                              'text-[10px] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5',
-                              member.affiliation === 'internal'
-                                ? 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue'
-                                : 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple',
-                            )}
-                          >
-                            {member.affiliation === 'internal' ? (
-                              <>
-                                <Building2 className="h-2.5 w-2.5" />
-                                Internal
-                              </>
-                            ) : (
-                              <>
-                                <Globe className="h-2.5 w-2.5" />
-                                External
-                              </>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+            {/* Dropdown Assignee Selector Section */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-foreground mb-1 block text-xs font-medium">
+                  Select Assignees
+                </label>
+                <p className="text-muted-foreground mb-3 text-xs">
+                  Select one or more assignees. Each person's role (Developer,
+                  Marketing, etc.) and affiliation (Internal vs External) will
+                  appear on the card.
+                </p>
               </div>
 
-              {selectedAssigneeIds.length === 0 && (
-                <p className="mt-2 text-xs text-kanban-board-circle-yellow">
-                  Tip: No assignees selected yet. You can assign someone now or
-                  assign later from the boards.
+              {/* Simple Theme Button Dropdown */}
+              <div className="flex flex-wrap items-center gap-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      className="gap-2 text-xs font-medium bg-white border text-black hover:bg-gray-50 shadow-xs cursor-pointer h-9 px-3.5"
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      <span>
+                        {selectedAssignees.length === 0
+                          ? 'Select Assignees from Directory'
+                          : `Select Assignees (${selectedAssignees.length} selected)`}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-80 max-h-72 overflow-y-auto p-1.5 shadow-lg border border-border bg-popover z-50"
+                  >
+                    {teamDirectory.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        No team members in directory yet.
+                      </div>
+                    ) : (
+                      teamDirectory.map((member) => {
+                        const isSelected = selectedAssigneeIds.includes(member.id)
+                        return (
+                          <DropdownMenuItem
+                            key={member.id}
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleToggleAssignee(member.id)
+                            }}
+                            className={cn(
+                              'flex items-center justify-between gap-3 p-2.5 rounded-md cursor-pointer transition-colors text-xs',
+                              isSelected
+                                ? 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue font-medium'
+                                : 'hover:bg-muted',
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div
+                                className={cn(
+                                  'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
+                                  isSelected
+                                    ? 'border-kanban-board-circle-blue bg-kanban-board-circle-blue text-white'
+                                    : 'border-muted-foreground/40 bg-background',
+                                )}
+                              >
+                                {isSelected && (
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                )}
+                              </div>
+
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kanban-board-circle-blue/15 text-kanban-board-circle-blue font-bold text-xs">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-semibold text-foreground">
+                                  {member.name}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                  {member.role}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span
+                              className={cn(
+                                'text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 inline-flex items-center gap-0.5',
+                                member.affiliation === 'internal'
+                                  ? 'bg-kanban-board-circle-blue/15 text-kanban-board-circle-blue'
+                                  : 'bg-kanban-board-circle-purple/15 text-kanban-board-circle-purple',
+                              )}
+                            >
+                              {member.affiliation === 'internal' ? (
+                                <>
+                                  <Building2 className="h-2.5 w-2.5" />
+                                  Internal
+                                </>
+                              ) : (
+                                <>
+                                  <Globe className="h-2.5 w-2.5" />
+                                  External
+                                </>
+                              )}
+                            </span>
+                          </DropdownMenuItem>
+                        )
+                      })
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {selectedAssignees.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={() => setSelectedAssigneeIds([])}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground hover:text-destructive gap-1 cursor-pointer h-9"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Clear all ({selectedAssignees.length})
+                  </Button>
+                )}
+              </div>
+
+              {/* Selected Assignees Cards Grid */}
+              {selectedAssignees.length > 0 ? (
+                <div className="pt-2">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+                    {selectedAssignees.map((member) => (
+                      <div
+                        key={member.id}
+                        className="rounded-lg border border-kanban-board-circle-blue/25 bg-kanban-board-circle-blue/5 p-3 flex items-center justify-between gap-2 shadow-xs transition-all hover:border-kanban-board-circle-blue/40"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kanban-board-circle-blue text-white text-xs font-semibold">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold text-foreground">
+                              {member.name}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] font-medium text-muted-foreground">
+                                {member.role}
+                              </span>
+                              <span className="text-muted-foreground/60 text-[10px]">
+                                •
+                              </span>
+                              <span
+                                className={cn(
+                                  'text-[10px] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5',
+                                  member.affiliation === 'internal'
+                                    ? 'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue'
+                                    : 'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple',
+                                )}
+                              >
+                                {member.affiliation === 'internal' ? (
+                                  <>
+                                    <Building2 className="h-2.5 w-2.5" />
+                                    Internal
+                                  </>
+                                ) : (
+                                  <>
+                                    <Globe className="h-2.5 w-2.5" />
+                                    External
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAssignee(member.id)}
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 rounded-md transition-colors cursor-pointer shrink-0"
+                          title={`Remove ${member.name}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-kanban-board-circle-yellow pt-1">
                 </p>
               )}
             </div>
           </div>
 
+          {/* Card 5: Attachments & Documents */}
+          <div className="bg-card border-border rounded-xl border p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between border-b border-border/50 pb-3">
+              <div className="flex items-center gap-2">
+                <Paperclip className="text-primary h-4 w-4" />
+                <h2 className="text-foreground text-sm font-semibold">
+                  5. Attachments & Supporting Files
+                </h2>
+                {attachments.length > 0 && (
+                  <span className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                    {attachments.length} {attachments.length === 1 ? 'file' : 'files'}
+                  </span>
+                )}
+              </div>
+
+              {attachments.length > 0 && (
+                <Button
+                  type="button"
+                  onClick={() => setAttachments([])}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-destructive gap-1 cursor-pointer h-7"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Remove all
+                </Button>
+              )}
+            </div>
+
+            <p className="text-muted-foreground mb-4 text-xs">
+              Upload image assets (screenshots, designs, wireframes), PDF specifications, or documentation to attach to this assessment.
+            </p>
+
+            {/* Drag & Drop Upload Zone */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                setIsDraggingFile(true)
+              }}
+              onDragLeave={() => setIsDraggingFile(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDraggingFile(false)
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  handleFileUpload(e.dataTransfer.files)
+                }
+              }}
+              onClick={() => {
+                document.getElementById('assessment-file-upload')?.click()
+              }}
+              className={cn(
+                'group relative rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-all',
+                isDraggingFile
+                  ? 'border-kanban-board-circle-blue bg-kanban-board-circle-blue/5 scale-[0.99]'
+                  : 'border-border/80 bg-background/60 hover:border-kanban-board-circle-blue/50 hover:bg-muted/30',
+              )}
+            >
+              <input
+                id="assessment-file-upload"
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFileUpload(e.target.files)
+                    e.target.value = ''
+                  }
+                }}
+              />
+
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue group-hover:scale-110 transition-transform">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-foreground text-xs font-semibold">
+                    <span className="text-kanban-board-circle-blue underline">Click to upload</span> or drag & drop files here
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-[11px]">
+                    Supports Images (PNG, JPG, SVG, WebP, GIF), PDFs, and Documents (up to 25MB each)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Uploaded Attachments Grid */}
+            {attachments.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Paperclip className="h-3.5 w-3.5 text-kanban-board-circle-blue" />
+                  Attached Files ({attachments.length}):
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+                  {attachments.map((file) => {
+                    const isImage = file.type.startsWith('image/')
+                    const isPdf =
+                      file.type === 'application/pdf' ||
+                      file.name.toLowerCase().endsWith('.pdf')
+
+                    return (
+                      <div
+                        key={file.id}
+                        className="group relative rounded-lg border border-border bg-background p-3 shadow-xs hover:border-kanban-board-circle-blue/40 transition-all flex flex-col justify-between"
+                      >
+                        {/* Preview Area */}
+                        {isImage ? (
+                          <div
+                            onClick={() =>
+                              setPreviewImage({ url: file.url, name: file.name })
+                            }
+                            className="relative mb-2 h-28 w-full overflow-hidden rounded-md bg-muted/40 cursor-zoom-in"
+                            title="Click to zoom preview"
+                          >
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            />
+                            <div className="absolute top-1.5 left-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white flex items-center gap-1">
+                              <ImageIcon className="h-2.5 w-2.5" />
+                              IMG
+                            </div>
+                          </div>
+                        ) : isPdf ? (
+                          <div className="relative mb-2 flex h-28 w-full flex-col items-center justify-center rounded-md bg-red-500/10 text-red-500">
+                            <FileText className="h-10 w-10 mb-1" />
+                            <span className="text-[11px] font-semibold">PDF Document</span>
+                            <div className="absolute top-1.5 left-1.5 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                              PDF
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative mb-2 flex h-28 w-full flex-col items-center justify-center rounded-md bg-blue-500/10 text-blue-500">
+                            <File className="h-10 w-10 mb-1" />
+                            <span className="text-[11px] font-semibold">Attachment</span>
+                            <div className="absolute top-1.5 left-1.5 rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                              DOC
+                            </div>
+                          </div>
+                        )}
+
+                        {/* File Details */}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="truncate text-xs font-semibold text-foreground"
+                            title={file.name}
+                          >
+                            {file.name}
+                          </p>
+                          <p className="text-muted-foreground mt-0.5 text-[11px]">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
+
+                        {/* Action Links */}
+                        <div className="mt-2.5 flex items-center justify-between border-t border-border/50 pt-2">
+                          <a
+                            href={file.url}
+                            download={file.name}
+                            className="text-[11px] text-kanban-board-circle-blue hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                          >
+                            <Download className="h-3 w-3" />
+                            Download
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttachment(file.id)}
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 rounded-md transition-colors cursor-pointer"
+                            title={`Remove ${file.name}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Image Lightbox Modal */}
+          {previewImage && (
+            <div
+              onClick={() => setPreviewImage(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs animate-in fade-in-0 duration-150 cursor-pointer"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-xl bg-card border border-border p-2 shadow-2xl"
+              >
+                <div className="flex items-center justify-between pb-2 px-2 border-b border-border/50">
+                  <span className="text-xs font-semibold text-foreground truncate max-w-md">
+                    {previewImage.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage(null)}
+                    className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-center p-2 max-h-[75vh] overflow-auto">
+                  <img
+                    src={previewImage.url}
+                    alt={previewImage.name}
+                    className="max-h-[70vh] w-auto rounded object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Action Buttons */}
-          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              onClick={() => navigate('/work/status-board')}
-              variant="outline"
-              size="default"
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-
-            <Button
-              type="button"
-              onClick={() => handleSubmit('priority')}
-              variant="default"
-              size="default"
-              className="gap-1.5 text-xs bg-kanban-board-circle-yellow hover:bg-kanban-board-circle-yellow/90"
-            >
-              <Flag className="h-3.5 w-3.5" />
-              Save & View on Impact Board
-            </Button>
-
-            <Button
-              type="button"
-              onClick={() => handleSubmit('status')}
-              variant="default"
-              size="default"
-              className="gap-1.5 text-xs"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Save & View on Status Board
-            </Button>
+          <div className="bg-card border-border rounded-xl border p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              Ready to submit? Save directly or use the dropdown to view on the Impact Board.
+            </div>
+            {renderSaveActions('default')}
           </div>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+  }

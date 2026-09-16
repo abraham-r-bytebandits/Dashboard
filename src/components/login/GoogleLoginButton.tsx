@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 
@@ -26,6 +27,7 @@ const CLIENT_ID =
 
 const GoogleLoginButton = () => {
   const { onAuthSuccess } = useAuth();
+  const navigate = useNavigate();
 
   const handleCallback = useCallback(
     async (response: { credential: string }) => {
@@ -36,11 +38,12 @@ const GoogleLoginButton = () => {
         const { accessToken, refreshToken } = res.data;
         // Uses context to update state seamlessly — no page reload
         await onAuthSuccess(accessToken, refreshToken, true);
+        navigate('/', { replace: true });
       } catch {
         alert("Google login failed. Please try again.");
       }
     },
-    [onAuthSuccess]
+    [onAuthSuccess, navigate]
   );
 
   useEffect(() => {

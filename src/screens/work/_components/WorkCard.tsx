@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useNavigate } from 'react-router-dom'
 import {
   MoreVertical,
   Paperclip,
@@ -7,6 +9,8 @@ import {
   Flag,
   Calendar,
   Trash2,
+  Eye,
+  Star,
 } from 'lucide-react'
 import { format, isValid } from 'date-fns'
 import { Dropdown, type MenuProps } from 'antd'
@@ -15,9 +19,15 @@ import { cn } from '@/lib/utils'
 import { useAppDispatch } from '@/hooks/redux'
 import { deleteWorkItem, moveWorkItem } from '@/store/workSlice'
 import { workService } from '@/services/workService'
+import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 
 const DEFAULT_BADGE_CLASSNAME = 'bg-muted text-muted-foreground border-border'
+
+function stripHtml(html?: string) {
+  if (!html) return ''
+  return html.replace(/<[^>]*>?/gm, '').trim()
+}
 
 type WorkCardProps = {
   item: WorkItem
@@ -26,6 +36,42 @@ type WorkCardProps = {
 
 export function WorkCard({ item, showStatus }: WorkCardProps) {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const { user, isAdmin, isSuperAdmin } = useAuth()
+  const pointerStartPos = useRef<{ x: number; y: number } | null>(null)
+
+  const isAssignee = !!(
+    user &&
+    item.assignees?.some(
+      (a) =>
+        (a.email && user.email && a.email.toLowerCase() === user.email.toLowerCase()) ||
+        a.id === user.id ||
+        a.id === user.publicId
+    )
+  )
+  const canSetPriority = isAdmin || isSuperAdmin
+  const canDelete = isAdmin || isSuperAdmin
+
+  const handleOpenDetails = () => {
+    navigate(`/work/details/${item.id}`)
+  }
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartPos.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isDragging) return
+    if (pointerStartPos.current) {
+      const dx = Math.abs(e.clientX - pointerStartPos.current.x)
+      const dy = Math.abs(e.clientY - pointerStartPos.current.y)
+      if (dx > 6 || dy > 6) {
+        return
+      }
+    }
+    handleOpenDetails()
+  }
+
   const {
     attributes,
     listeners,
@@ -98,41 +144,55 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
     Operations: 'bg-kanban-board-circle-gray/10 text-kanban-board-circle-gray',
   }
 
-  const dueDate = new Date(item.dueDate)
-  const dueDateLabel = isValid(dueDate)
+  const dueDate = item.dueDate ? new Date(item.dueDate) : null
+  const dueDateLabel = dueDate && isValid(dueDate)
     ? format(dueDate, 'dd MMM, yyyy')
-    : 'No due date'
+    : undefined
 
   const menuItems: MenuProps['items'] = [
     {
-      key: 'priority-group',
-      label: 'Set Priority',
-      children: [
-        {
-          key: 'p-high',
-          label: 'High Priority',
-          onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'high')
-            dispatch(moveWorkItem({ id: item.id, priority: 'high' }))
+      key: 'view-details',
+      icon: <Eye className="h-3.5 w-3.5" />,
+      label: 'View Full Details',
+      onClick: handleOpenDetails,
+    },
+    ...(canSetPriority
+      ? [
+          { type: 'divider' as const },
+          {
+            key: 'priority-group',
+            label: 'Set Priority',
+            children: [
+              {
+                key: 'p-high',
+                label: 'High Priority',
+                onClick: () => {
+                  workService.updateWorkItemPriority(item.id, 'high')
+                  dispatch(moveWorkItem({ id: item.id, priority: 'high' }))
+                },
+              },
+              {
+                key: 'p-medium',
+                label: 'Medium Priority',
+                onClick: () => {
+                  workService.updateWorkItemPriority(item.id, 'medium')
+                  dispatch(moveWorkItem({ id: item.id, priority: 'medium' }))
+                },
+              },
+              {
+                key: 'p-low',
+                label: 'Low Priority',
+                onClick: () => {
+                  workService.updateWorkItemPriority(item.id, 'low')
+                  dispatch(moveWorkItem({ id: item.id, priority: 'low' }))
+                },
+              },
+            ],
           },
-        },
-        {
-          key: 'p-medium',
-          label: 'Medium Priority',
-          onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'medium')
-            dispatch(moveWorkItem({ id: item.id, priority: 'medium' }))
-          },
-        },
-        {
-          key: 'p-low',
-          label: 'Low Priority',
-          onClick: () => {
-            workService.updateWorkItemPriority(item.id, 'low')
-            dispatch(moveWorkItem({ id: item.id, priority: 'low' }))
-          },
-        },
-      ],
+        ]
+      : []),
+    {
+      type: 'divider',
     },
     {
       key: 'status-group',
@@ -180,68 +240,101 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
         },
       ],
     },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'delete',
-      danger: true,
-      icon: <Trash2 className="h-3.5 w-3.5" />,
-      label: 'Delete Work Item',
-      onClick: () => {
-        workService.deleteWorkItem(item.id)
-        dispatch(deleteWorkItem(item.id))
-      },
-    },
+    ...(canDelete
+      ? [
+          { type: 'divider' as const },
+          {
+            key: 'delete',
+            danger: true,
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            label: 'Delete Work Item',
+            onClick: () => {
+              workService.deleteWorkItem(item.id)
+              dispatch(deleteWorkItem(item.id))
+            },
+          },
+        ]
+      : []),
   ]
 
   const totalMilestones = Math.max(1, Math.min(12, item.milestone.total || 1))
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={cn(
-        'bg-card border-border rounded-xl border p-4 shadow-sm transition-all hover:shadow-md cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50 ring-2 ring-primary',
-      )}
-    >
-      {/* Due Date & Action Menu */}
-      <div className="mb-2.5 flex items-start justify-between">
-        <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <Calendar className="h-3.5 w-3.5 text-muted-foreground/80" />
-          <span>Due: {dueDateLabel}</span>
-        </div>
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onPointerDown={(e) => {
+          handlePointerDown(e)
+          listeners?.onPointerDown?.(e)
+        }}
+        onClick={handleCardClick}
+        className={cn(
+          'group relative bg-card border-border rounded-xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/40 cursor-grab active:cursor-grabbing',
+          isDragging && 'opacity-50 ring-2 ring-primary',
+        )}
+      >
+        {/* Due Date & Action Menu */}
+        <div className="mb-2.5 flex items-start justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {dueDateLabel && (
+              <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground/80" />
+                <span>Due: {dueDateLabel}</span>
+              </div>
+            )}
+            {isAssignee && (
+              <span className="bg-primary/10 text-primary border-primary/25 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold">
+                <Star className="h-2.5 w-2.5 fill-primary" />
+                Assigned
+              </span>
+            )}
+          </div>
 
-        <div
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <Dropdown
-            menu={{ items: menuItems }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
+          <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
-              className="-mr-1.5 -mt-1"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenDetails()
+              }}
+              title="View Full Details"
+              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity -mt-1 cursor-pointer"
             >
-              <MoreVertical className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" />
             </Button>
-          </Dropdown>
+
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <Dropdown
+                menu={{ items: menuItems }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="-mr-1.5 -mt-1 cursor-pointer"
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </Dropdown>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Title & Description */}
       <h3 className="text-foreground mb-1.5 text-sm font-semibold tracking-tight">
         {item.title}
       </h3>
       <p className="text-muted-foreground mb-3 line-clamp-2 text-xs leading-relaxed">
-        {item.description}
+        {stripHtml(item.description)}
       </p>
 
       {/* Segmented Milestone Progress Bar matching screenshot */}

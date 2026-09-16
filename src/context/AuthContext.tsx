@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { setUser, setShowModal, setLoading } from '@/store/authSlice'
 import { apiClient } from '@/lib/apiClient'
@@ -25,6 +26,7 @@ type AuthProviderProps = {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const user = useAppSelector((state) => state.auth.user)
   const showModal = useAppSelector((state) => state.auth.showModal)
   const loading = useAppSelector((state) => state.auth.loading)
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userData = me.data?.data || me.data
     dispatch(setUser(userData as User))
     dispatch(setShowModal(false))
+    navigate('/', { replace: true })
   }
 
   const login = async (
@@ -120,6 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       sessionStorage.clear()
       dispatch(setUser(null))
       dispatch(setShowModal(true))
+      navigate('/', { replace: true })
     }
   }
 

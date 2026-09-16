@@ -19,8 +19,15 @@ export default function StatusBoard() {
   const navigate = useNavigate()
   const jsLoaded = useJsLoaded()
 
-  const { filteredItems, activeDirectory, isLoading, handleMoveItem, filters } =
-    useWorkBoardData('status')
+  const {
+    filteredItems,
+    activeDirectory,
+    isLoading,
+    handleMoveItem,
+    scopeFilter,
+    setScopeFilter,
+    filters,
+  } = useWorkBoardData('status')
 
   const { searchQuery, priorityFilter, roleFilter, affiliationFilter } = filters
 
@@ -42,16 +49,13 @@ export default function StatusBoard() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-kanban-board-circle-blue text-primary-foreground shadow-sm">
+              <div className="flex h-8 w-8 -mt-2 items-center justify-center rounded-lg bg-kanban-board-circle-blue text-primary-foreground shadow-sm">
                 <Sparkles className="h-4 w-4" />
               </div>
               <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Work Assignment: Status Board
               </h1>
             </div>
-            <p className="text-muted-foreground text-xs mt-1">
-              Monitor all of your task progress across workflow stages.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -75,12 +79,11 @@ export default function StatusBoard() {
 
             <Button
               onClick={() => navigate('/work/create')}
-              variant="outline"
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90 shadow-sm cursor-pointer font-medium"
             >
               <Plus className="h-3.5 w-3.5" />
-              Invite
+              Create Assessment
             </Button>
           </div>
         </div>
@@ -90,6 +93,8 @@ export default function StatusBoard() {
           currentBoard="status"
           searchQuery={searchQuery}
           onSearchChange={(q) => dispatch(setSearchQuery(q))}
+          scopeFilter={scopeFilter}
+          onScopeChange={setScopeFilter}
           priorityFilter={priorityFilter}
           onPriorityChange={(p) => dispatch(setPriorityFilter(p))}
           roleFilter={roleFilter}

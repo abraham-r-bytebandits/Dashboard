@@ -27,6 +27,7 @@ import { AxiosError } from "axios"
 import { apiClient } from "@/lib/apiClient"
 import { queryClient } from "@/lib/queryClient"
 import { useAuth } from "@/context/AuthContext"
+import { Navigate } from "react-router-dom"
 import { siteSchema, type SiteFormData } from "./site.schema"
 
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -322,14 +323,7 @@ export default function SiteManagement() {
 
     // ── access guard ────────────────────────────────────────────────────────
     if (!isSuperAdmin) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen w-full gap-4">
-                <LockOutlined className="text-5xl text-[#E5395A]" />
-                <p className="text-lg font-semibold text-gray-600">
-                    Access Denied — Super Admin only
-                </p>
-            </div>
-        );
+        return <Navigate to="/" replace />;
     }
 
     // ── render ──────────────────────────────────────────────────────────────

@@ -70,6 +70,21 @@ const workSlice = createSlice({
         }
       }
     },
+    updateMilestoneProgress: (
+      state,
+      action: PayloadAction<{ id: string; completed: number; total?: number }>
+    ) => {
+      const index = state.workItems.findIndex(item => item.id === action.payload.id)
+      if (index !== -1) {
+        state.workItems[index].milestone = {
+          completed: action.payload.completed,
+          total:
+            action.payload.total !== undefined
+              ? action.payload.total
+              : state.workItems[index].milestone.total,
+        }
+      }
+    },
     addTeamMember: (state, action: PayloadAction<Assignee>) => {
       state.teamDirectory.push(action.payload)
     },
@@ -98,6 +113,7 @@ export const {
   updateWorkItem,
   deleteWorkItem,
   moveWorkItem,
+  updateMilestoneProgress,
   addTeamMember,
   setSearchQuery,
   setPriorityFilter,
