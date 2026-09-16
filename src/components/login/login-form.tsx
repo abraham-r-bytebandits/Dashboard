@@ -46,8 +46,9 @@ export default function LoginForm() {
       await loginMutation.mutateAsync(payload)
       message.success('Login successful')
       navigate('/', { replace: true })
-    } catch {
-      message.error('Login failed. Please check your credentials.')
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message?: string } }; message?: string }
+      message.error(apiError?.response?.data?.message || apiError?.message || 'Login failed. Please check your credentials.')
     }
   })
 
@@ -126,7 +127,7 @@ export default function LoginForm() {
                 type="checkbox"
                 id="remember"
                 {...register('remember')}
-                className="h-4 w-4 rounded border-gray-300 accent-primary"
+                className="h-4 w-4 rounded border-gray-300 accent-[#405189]"
               />
               <label htmlFor="remember" className="text-sm text-gray-600 select-none">
                 Remember me
@@ -136,7 +137,7 @@ export default function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full h-10 text-white font-semibold mt-4 bg-primary hover:bg-primary/90"
+            className="w-full h-10 !text-white font-semibold mt-4 bg-[#405189] hover:bg-[#344270] transition-colors cursor-pointer shadow-sm disabled:opacity-50"
             disabled={isSubmitting || loginMutation.isPending}
           >
             {isSubmitting || loginMutation.isPending ? 'Signing In...' : 'Sign In'}

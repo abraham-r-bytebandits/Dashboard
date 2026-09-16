@@ -39,8 +39,9 @@ const GoogleLoginButton = () => {
         // Uses context to update state seamlessly — no page reload
         await onAuthSuccess(accessToken, refreshToken, true);
         navigate('/', { replace: true });
-      } catch {
-        alert("Google login failed. Please try again.");
+      } catch (err: unknown) {
+        const apiError = err as { response?: { data?: { message?: string } }; message?: string };
+        alert(apiError?.response?.data?.message || "Google login failed. Please try again.");
       }
     },
     [onAuthSuccess, navigate]
