@@ -90,6 +90,12 @@ jobs:
             else
               echo "PORT=4001" > .env
             fi
+
+            # Copy SMTP settings from /home/ec2-user/.env.local into backend .env if present
+            if [ -f /home/ec2-user/.env.local ]; then
+              echo "Syncing SMTP configuration from /home/ec2-user/.env.local..."
+              cat /home/ec2-user/.env.local >> .env || true
+            fi
             
             # Install, generate prisma client, run migrations, and build
             npm install

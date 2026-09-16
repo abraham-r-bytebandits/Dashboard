@@ -227,7 +227,13 @@ export default function CreateAssessment() {
     }
     dispatch(addWorkItem(newWorkItem))
 
-    message.success('Work assessment created successfully!')
+    if (selectedAssignees.length > 0) {
+      message.success(
+        `Work assessment created! Notification email sent to ${selectedAssignees.length} assigned member${selectedAssignees.length > 1 ? 's' : ''}.`
+      )
+    } else {
+      message.success('Work assessment created successfully!')
+    }
 
     if (targetBoard === 'priority') {
       navigate('/work/impact-board')
