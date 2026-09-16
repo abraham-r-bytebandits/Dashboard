@@ -8,8 +8,16 @@ type CustomAxiosRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
 }
 
+export const getBaseURL = (): string => {
+  const envBase = import.meta.env.VITE_API_BASE_URL
+  if (envBase && (!import.meta.env.PROD || !envBase.includes('localhost'))) {
+    return envBase
+  }
+  return '/api'
+}
+
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: getBaseURL(),
 })
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
@@ -56,7 +64,7 @@ api.interceptors.response.use(
         }
 
         const res = await axios.post<RefreshTokenResponse>(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
+          `${getBaseURL()}/auth/refresh`,
           { refreshToken }
         )
 

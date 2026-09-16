@@ -24,6 +24,8 @@ jobs:
           npm install --no-save @tailwindcss/oxide-linux-x64-gnu@4.1.18 lightningcss-linux-x64-gnu@1.30.2 || true
 
       - name: 4. Build project
+        env:
+          VITE_API_BASE_URL: "/api"
         run: npm run build
 
       - name: Copy dist to EC2
