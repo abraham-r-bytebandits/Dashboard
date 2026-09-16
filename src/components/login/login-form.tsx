@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Eye, EyeOff } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import GoogleLoginButton from './GoogleLoginButton'
 import { useLogin } from '@/hooks/useAuth'
 import { loginSchema, type LoginFormValues } from './login.schema'
@@ -17,11 +17,14 @@ export default function LoginForm() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
 
+  const [tab, setTab] = useState<'email' | 'mobile'>('email')
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
+    clearErrors,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -35,13 +38,14 @@ export default function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
+      const trimmed = values.identifier.trim()
       const isPhone =
-        /^\+?[\d\s\-()]+$/.test(values.identifier) &&
-        values.identifier.replace(/\D/g, '').length >= 7
+        tab === 'mobile' ||
+        (/^\+?[\d\s\-()]+$/.test(trimmed) && trimmed.replace(/\D/g, '').length >= 7)
 
       const payload = isPhone
-        ? { phone: values.identifier, password: values.password, remember: values.remember || false }
-        : { email: values.identifier, password: values.password, remember: values.remember || false }
+        ? { phone: trimmed, password: values.password, remember: values.remember || false }
+        : { email: trimmed.toLowerCase(), password: values.password, remember: values.remember || false }
 
       await loginMutation.mutateAsync(payload)
       message.success('Login successful')
@@ -57,47 +61,39 @@ export default function LoginForm() {
       <CardContent className="p-6 pt-8">
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-[#405189]">Welcome back</h2>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
 
           <Tabs
-            defaultValue="email"
-            className="w-full"
-            onValueChange={() => {
+            value={tab}
+            onValueChange={(val) => {
+              setTab(val as 'email' | 'mobile')
               setValue('identifier', '')
+              clearErrors('identifier')
             }}
+            className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="mobile">Mobile Number</TabsTrigger>
             </TabsList>
-            <TabsContent value="email" className="space-y-1.5 mt-0">
-              <Label htmlFor="loginEmail">Email Address</Label>
+            <div className="space-y-1.5 mt-0">
+              <Label htmlFor="loginIdentifier">
+                {tab === 'email' ? 'Email Address' : 'Mobile Number'}
+              </Label>
               <Input
-                id="loginEmail"
-                type="email"
-                placeholder="name@example.com"
+                id="loginIdentifier"
+                type={tab === 'email' ? 'email' : 'tel'}
+                placeholder={tab === 'email' ? 'name@example.com' : '+91 9876543210'}
                 {...register('identifier')}
                 className="h-10"
+                autoComplete={tab === 'email' ? 'username' : 'tel'}
               />
               {errors.identifier && (
                 <p className="text-xs text-destructive">{errors.identifier.message}</p>
               )}
-            </TabsContent>
-            <TabsContent value="mobile" className="space-y-1.5 mt-0">
-              <Label htmlFor="loginMobile">Mobile Number</Label>
-              <Input
-                id="loginMobile"
-                type="tel"
-                placeholder="+91 9876543210"
-                {...register('identifier')}
-                className="h-10"
-              />
-              {errors.identifier && (
-                <p className="text-xs text-destructive">{errors.identifier.message}</p>
-              )}
-            </TabsContent>
+            </div>
           </Tabs>
 
           <div className="space-y-1.5">
