@@ -66,6 +66,8 @@ jobs:
               cd /home/ec2-user/backend
               git fetch origin
               git checkout main || git checkout -b main
+              git reset --hard origin/main
+              git clean -fd
               git pull origin main
             fi
             
