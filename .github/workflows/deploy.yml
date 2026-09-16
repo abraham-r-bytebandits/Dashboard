@@ -143,6 +143,20 @@ jobs:
                         print("Failed to find location block pattern in:", f)
             EOF
             
-            # 4. Restart Nginx
+            # 4. Renew SSL Certificate via Certbot
+            echo "=== RENEWING SSL CERTIFICATE ==="
+            if command -v certbot &> /dev/null; then
+              echo "Certbot is installed. Running renewal..."
+              sudo certbot renew --no-random-sleep-on-renew || sudo certbot --nginx -d abc-testig.duckdns.org --non-interactive --agree-tos -m support@thebytebandits.com || true
+            else
+              echo "Certbot not found. Installing certbot and python3-certbot-nginx..."
+              sudo dnf install -y certbot python3-certbot-nginx || sudo yum install -y certbot python3-certbot-nginx || true
+              sudo certbot --nginx -d abc-testig.duckdns.org --non-interactive --agree-tos -m support@thebytebandits.com || true
+            fi
+
+            # Enable auto-renew timer so it automatically stays valid
+            sudo systemctl enable --now certbot-renew.timer || sudo systemctl enable --now certbot.timer || true
+
+            # 5. Restart Nginx
             sudo nginx -t
             sudo systemctl restart nginx
