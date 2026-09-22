@@ -28,6 +28,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
+import { useNavigate } from "react-router-dom"
 
 export interface NavUserProps {
     user: {
@@ -49,6 +50,7 @@ export function NavUser({
 }: NavUserProps) {
     const { isMobile } = useSidebar()
     const { logout } = useAuth()
+    const navigate = useNavigate()
 
     const initials = `${user.profile.firstName?.[0] || ''}${user.profile.lastName?.[0] || ''}`.toUpperCase() || 'U'
     const fullName = `${user.profile.firstName} ${user.profile.lastName}`.trim() || user.username
@@ -95,7 +97,7 @@ export function NavUser({
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
                                     <BadgeCheck />
                                     Account
                                 </DropdownMenuItem>
@@ -172,7 +174,10 @@ export function NavUser({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuGroup>
-                    <DropdownMenuItem className="cursor-pointer gap-2 py-2 px-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors">
+                    <DropdownMenuItem
+                        onClick={() => navigate('/settings')}
+                        className="cursor-pointer gap-2 py-2 px-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
                         <BadgeCheck className="size-4 text-slate-500" />
                         <span className="text-sm font-medium">Account</span>
                     </DropdownMenuItem>

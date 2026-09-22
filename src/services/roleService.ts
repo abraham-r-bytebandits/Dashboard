@@ -12,16 +12,35 @@ type ApiUserResponse = {
   }
   functionalRole?: string
   affiliation?: string
+  roles?: string[]
+  managerPublicId?: string | null
+  managerName?: string | null
 }
 
 export function mapApiUserToAssignee(user: ApiUserResponse): Assignee {
+  const roleUpper = user.roles?.[0]?.toUpperCase()
+  const isExternal =
+    String(user.affiliation).toLowerCase() === 'external' ||
+    roleUpper === 'EXTERNAL_USER'
+  const systemRole: 'ADMIN' | 'MANAGER' | 'INTERNAL_USER' | 'EXTERNAL_USER' | undefined =
+    roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN'
+      ? 'ADMIN'
+      : roleUpper === 'MANAGER'
+      ? 'MANAGER'
+      : isExternal
+      ? 'EXTERNAL_USER'
+      : 'INTERNAL_USER'
+
   return {
     id: user.publicId || user.id || '',
     name: user.username || user.email,
     avatar: user.profile?.profileImage || '',
-    role: user.functionalRole || 'Member',
-    affiliation: String(user.affiliation).toLowerCase() === 'external' ? 'external' : 'internal',
+    role: user.functionalRole || (isExternal ? 'Contractor' : 'Member'),
+    systemRole,
+    affiliation: isExternal ? 'external' : 'internal',
     email: user.email,
+    managerPublicId: user.managerPublicId,
+    managerName: user.managerName,
   }
 }
 

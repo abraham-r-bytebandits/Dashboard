@@ -13,8 +13,11 @@ export type Assignee = {
   name: string
   avatar?: string
   role: UserRole
+  systemRole?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'INTERNAL_USER' | 'EXTERNAL_USER' | (string & {})
   affiliation: UserAffiliation
   email?: string
+  managerPublicId?: string | null
+  managerName?: string | null
 }
 
 export type Milestone = {
@@ -29,6 +32,14 @@ export type WorkAttachment = {
   type: string
   url: string
   uploadedAt: string
+}
+
+export type SubTask = {
+  id: string
+  title: string
+  description?: string
+  isCompleted: boolean
+  createdAt?: string
 }
 
 export type WorkItem = {
@@ -46,5 +57,9 @@ export type WorkItem = {
   createdAt: string
   updatedAt?: string
   publicId?: string
+  managerPublicId?: string | null
   createdByPublicId?: string
+  subtasks?: SubTask[]
+  isMainCompleted?: boolean
 }
+

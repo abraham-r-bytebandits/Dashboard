@@ -50,7 +50,7 @@ const SidebarContent = ({ payments, loading }: { payments: RecentPayment[]; load
                                     {payment.clientName}
                                 </span>
                             </div>
-                            <span className={`text-sm font-semibold flex-shrink-0 ${payment.type === 'DEBIT' ? 'text-[#000000]' : 'text-[#000000]'}`}>
+                            <span className={`text-sm font-semibold flex-shrink-0 ${payment.type === 'DEBIT' ? 'text-foreground' : 'text-foreground'}`}>
                                 {payment.type === 'DEBIT' ? '-' : '+'}₹{payment.amount.toLocaleString()}
                             </span>
                         </div>

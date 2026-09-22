@@ -8,16 +8,17 @@ import {
   setAffiliationFilter,
 } from '@/store/workSlice'
 import type { Assignee } from '@/types/work'
-import { useJsLoaded } from '@/hooks/use-js-loaded'
 import { KanbanBoard } from './_components/KanbanBoard'
 import { WorkToolbar } from './_components/WorkToolbar'
 import { useWorkBoardData } from './hooks/useWorkBoardData'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 
 export default function ImpactBoard() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const jsLoaded = useJsLoaded()
+  const { user } = useAuth()
+  const canCreateAssessment = Boolean(user)
 
   const {
     filteredItems,
@@ -31,7 +32,7 @@ export default function ImpactBoard() {
 
   const { searchQuery, statusFilter, roleFilter, affiliationFilter } = filters
 
-  if (!jsLoaded || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="text-muted-foreground flex items-center gap-2">
@@ -52,7 +53,7 @@ export default function ImpactBoard() {
               <div className="flex h-8 w-8 -mt-2 items-center justify-center rounded-lg bg-kanban-board-circle-yellow text-primary-foreground shadow-sm">
                 <Zap className="h-4 w-4" />
               </div>
-              <h1 className="text-foreground text-2xl font-bold tracking-tight">
+              <h1 className="text-foreground text-2xl font-medium tracking-tight">
                 Impact Board: Priority Check
               </h1>
             </div>
@@ -65,7 +66,7 @@ export default function ImpactBoard() {
                 {activeDirectory.slice(0, 6).map((member: Assignee) => (
                   <div
                     key={member.id}
-                    className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold shadow-sm"
+                    className="bg-brand-blue !text-white flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-medium shadow-sm"
                     title={`${member.name} (${member.role} · ${member.affiliation === 'internal' ? 'Internal' : 'External'})`}
                   >
                     {member.name
@@ -77,14 +78,16 @@ export default function ImpactBoard() {
               </div>
             )}
 
-            <Button
-              onClick={() => navigate('/work/create')}
-              size="sm"
-              className="gap-1.5 text-xs bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90 shadow-sm cursor-pointer font-semibold"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create Assessment
-            </Button>
+            {canCreateAssessment && (
+              <Button
+                onClick={() => navigate('/work/create')}
+                size="sm"
+                className="gap-1.5 text-xs bg-brand-blue !text-white hover:bg-brand-blue/90 shadow-sm cursor-pointer font-medium"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create Assessment
+              </Button>
+            )}
           </div>
         </div>
 

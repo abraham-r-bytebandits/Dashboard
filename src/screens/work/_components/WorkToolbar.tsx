@@ -1,4 +1,4 @@
-import { Search, Plus, Filter, LayoutGrid, Zap, Star, Users } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Select } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -15,7 +15,7 @@ import type {
   UserAffiliation,
 } from '@/types/work'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 
 type WorkToolbarProps = {
   currentBoard: 'status' | 'priority'
@@ -49,6 +49,7 @@ export function WorkToolbar({
   onAffiliationChange,
 }: WorkToolbarProps) {
   const navigate = useNavigate()
+  const { isAdmin, isManager } = useAuth()
 
   const { data: functionalRoles = [] } = useQuery({
     queryKey: ['functional-roles'],
@@ -60,121 +61,98 @@ export function WorkToolbar({
     ...functionalRoles.map((r) => ({ label: r.name, value: r.name })),
   ]
 
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    priorityFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    roleFilter !== 'all' ||
+    affiliationFilter !== 'all'
+
   return (
-    <div className="bg-card border-border mb-6 rounded-xl border p-4 shadow-sm">
-      {/* Top row: View Switcher, Search, and Create Assessment button */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        {/* Board Switcher Pills */}
-        <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
-          <Button
-            onClick={() => navigate('/work/status-board')}
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'gap-2 text-xs font-semibold cursor-pointer transition-all',
-              currentBoard === 'status'
-                ? 'bg-kanban-board-circle-blue text-white shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-            )}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            Status Board
-          </Button>
-          <Button
-            onClick={() => navigate('/work/impact-board')}
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'gap-2 text-xs font-semibold cursor-pointer transition-all',
-              currentBoard === 'priority'
-                ? 'bg-kanban-board-circle-yellow text-slate-950 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-            )}
-          >
-            <Zap className="h-3.5 w-3.5" />
-            Impact Board
-          </Button>
+    <div className="bg-card border-border mb-6 rounded-xl border p-3.5 shadow-xs">
+      {/* Top row: Board Switcher, Scope Switcher, and Search */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Board Switcher */}
+          <div className="inline-flex items-center rounded-lg bg-muted p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => navigate('/work/status-board')}
+              className={cn(
+                'rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer',
+                currentBoard === 'status'
+                  ? 'bg-brand-blue !text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Status Board
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/work/impact-board')}
+              className={cn(
+                'rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer',
+                currentBoard === 'priority'
+                  ? 'bg-brand-blue !text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Impact Board
+            </button>
+          </div>
+
+          {/* Scope Switcher (Admins & Managers) */}
+          {onScopeChange && (isAdmin || isManager) && (
+            <div className="inline-flex items-center rounded-lg bg-muted p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => onScopeChange('all')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer',
+                  scopeFilter === 'all'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {isManager && !isAdmin ? "My Team's Tasks" : 'All Tasks'}
+              </button>
+              <button
+                type="button"
+                onClick={() => onScopeChange('assigned')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer',
+                  scopeFilter === 'assigned'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Assigned to Me
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Scope Switcher: Assigned to Me vs All Tasks */}
-        {onScopeChange && (
-          <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onScopeChange('assigned')}
-              className={cn(
-                'gap-1.5 text-xs font-semibold cursor-pointer transition-all',
-                scopeFilter === 'assigned'
-                  ? 'bg-card text-foreground shadow-xs border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-              )}
-            >
-              <Star className="h-3 w-3 fill-primary text-primary" />
-              Assigned to Me
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onScopeChange('all')}
-              className={cn(
-                'gap-1.5 text-xs font-semibold cursor-pointer transition-all',
-                scopeFilter === 'all'
-                  ? 'bg-card text-foreground shadow-xs border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-              )}
-            >
-              <Users className="h-3.5 w-3.5" />
-              All Tasks
-            </Button>
-          </div>
-        )}
-
-        {/* Search & Create Button */}
-        <div className="flex flex-1 min-w-72 items-center gap-3 justify-end">
-          <div className="relative max-w-md w-full">
-            <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search tasks, descriptions..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="border-input focus-visible:ring-ring h-9 w-full rounded-md border bg-background pl-9 pr-3 text-xs outline-none transition-colors focus-visible:ring-2"
-            />
-          </div>
-
-          <Button
-            onClick={() => navigate('/work/create')}
-            size="sm"
-            className={cn(
-              'gap-1.5 text-xs shrink-0 cursor-pointer transition-all shadow-sm',
-              currentBoard === 'status'
-                ? 'bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90 font-medium'
-                : 'bg-kanban-board-circle-yellow text-slate-950 hover:bg-kanban-board-circle-yellow/90 font-semibold',
-            )}
-          >
-            <Plus className="h-4 w-4" />
-            Create Assessment
-          </Button>
+        {/* Search */}
+        <div className="relative w-full sm:w-64 md:w-72">
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="border-input focus:border-brand-blue focus:ring-1 focus:ring-brand-blue h-8.5 w-full rounded-md border bg-background pl-8.5 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-colors"
+          />
         </div>
       </div>
 
       {/* Filter Row */}
-      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/50">
-        <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-          <Filter className="h-3.5 w-3.5" />
-          <span>Filters:</span>
-        </div>
-
+      <div className="mt-3 flex flex-wrap items-center gap-2.5 pt-3 border-t border-border">
         {currentBoard === 'status' && onPriorityChange && (
           <Select
             value={priorityFilter}
             onChange={onPriorityChange}
             options={WORK_PRIORITY_FILTER_OPTIONS}
             className="min-w-36"
-            size="small"
             placeholder="Priority"
           />
         )}
@@ -185,7 +163,6 @@ export function WorkToolbar({
             onChange={onStatusChange}
             options={WORK_STATUS_FILTER_OPTIONS}
             className="min-w-44"
-            size="small"
             placeholder="Status"
           />
         )}
@@ -195,7 +172,6 @@ export function WorkToolbar({
           onChange={onRoleChange}
           options={roleOptions}
           className="min-w-36"
-          size="small"
           placeholder="Role"
         />
 
@@ -204,16 +180,12 @@ export function WorkToolbar({
           onChange={onAffiliationChange}
           options={WORK_AFFILIATION_FILTER_OPTIONS}
           className="min-w-36"
-          size="small"
           placeholder="Affiliation"
         />
 
-        {(priorityFilter !== 'all' ||
-          statusFilter !== 'all' ||
-          roleFilter !== 'all' ||
-          affiliationFilter !== 'all' ||
-          searchQuery.length > 0) && (
-          <Button
+        {hasActiveFilters && (
+          <button
+            type="button"
             onClick={() => {
               onSearchChange('')
               onRoleChange('all')
@@ -221,12 +193,10 @@ export function WorkToolbar({
               if (onPriorityChange) onPriorityChange('all')
               if (onStatusChange) onStatusChange('all')
             }}
-            variant="ghost"
-            size="sm"
-            className="text-xs underline ml-auto"
+            className="ml-auto text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer underline-offset-4 hover:underline"
           >
             Reset filters
-          </Button>
+          </button>
         )}
       </div>
     </div>

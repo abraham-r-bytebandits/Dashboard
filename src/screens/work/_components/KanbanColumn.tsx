@@ -35,10 +35,10 @@ export function KanbanColumn({
               color,
             )}
           />
-          <h3 className="text-foreground text-sm font-bold tracking-tight">
+          <h3 className="text-foreground text-sm font-medium tracking-tight">
             {title}
           </h3>
-          <span className="bg-muted/80 text-muted-foreground rounded-full px-2 py-0.5 text-xs font-semibold">
+          <span className="bg-muted/80 text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
             {items.length}
           </span>
         </div>
@@ -58,7 +58,7 @@ export function KanbanColumn({
         ref={setNodeRef}
         className={cn(
           'bg-muted/20 flex-1 space-y-3 rounded-xl p-3 border border-border/40 min-h-[500px] transition-colors',
-          isOver && 'bg-primary/5 ring-2 ring-primary/40 border-primary/40',
+          isOver && 'bg-brand-blue/5 ring-2 ring-brand-blue/40 border-brand-blue/40',
         )}
       >
         <SortableContext

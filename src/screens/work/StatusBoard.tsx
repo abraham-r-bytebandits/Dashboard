@@ -8,16 +8,17 @@ import {
   setAffiliationFilter,
 } from '@/store/workSlice'
 import type { Assignee } from '@/types/work'
-import { useJsLoaded } from '@/hooks/use-js-loaded'
 import { KanbanBoard } from './_components/KanbanBoard'
 import { WorkToolbar } from './_components/WorkToolbar'
 import { useWorkBoardData } from './hooks/useWorkBoardData'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 
 export default function StatusBoard() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const jsLoaded = useJsLoaded()
+  const { user } = useAuth()
+  const canCreateAssessment = Boolean(user)
 
   const {
     filteredItems,
@@ -31,11 +32,11 @@ export default function StatusBoard() {
 
   const { searchQuery, priorityFilter, roleFilter, affiliationFilter } = filters
 
-  if (!jsLoaded || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="text-muted-foreground flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-blue border-t-transparent" />
           <span>Loading Status Board...</span>
         </div>
       </div>
@@ -49,10 +50,10 @@ export default function StatusBoard() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 -mt-2 items-center justify-center rounded-lg bg-kanban-board-circle-blue text-primary-foreground shadow-sm">
+              <div className="flex h-8 w-8 -mt-2 items-center justify-center rounded-lg bg-brand-blue !text-white shadow-sm">
                 <Sparkles className="h-4 w-4" />
               </div>
-              <h1 className="text-foreground text-2xl font-bold tracking-tight">
+              <h1 className="text-foreground text-2xl font-medium tracking-tight">
                 Work Assignment: Status Board
               </h1>
             </div>
@@ -65,7 +66,7 @@ export default function StatusBoard() {
                 {activeDirectory.slice(0, 6).map((member: Assignee) => (
                   <div
                     key={member.id}
-                    className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold shadow-sm"
+                    className="bg-brand-blue !text-white flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-medium shadow-sm"
                     title={`${member.name} (${member.role} · ${member.affiliation === 'internal' ? 'Internal' : 'External'})`}
                   >
                     {member.name
@@ -77,14 +78,16 @@ export default function StatusBoard() {
               </div>
             )}
 
-            <Button
-              onClick={() => navigate('/work/create')}
-              size="sm"
-              className="gap-1.5 text-xs bg-kanban-board-circle-blue text-white hover:bg-kanban-board-circle-blue/90 shadow-sm cursor-pointer font-medium"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create Assessment
-            </Button>
+            {canCreateAssessment && (
+              <Button
+                onClick={() => navigate('/work/create')}
+                size="sm"
+                className="gap-1.5 text-xs bg-brand-blue !text-white hover:bg-brand-blue/90 shadow-sm cursor-pointer font-medium"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create Assessment
+              </Button>
+            )}
           </div>
         </div>
 

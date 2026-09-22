@@ -27,9 +27,10 @@ export const MESSAGE_STATUS_OPTIONS = [
 ] satisfies SelectOption[]
 
 export const USER_ROLE_OPTIONS = [
-  { label: 'Super Admin', value: 'SUPER_ADMIN' },
   { label: 'Admin', value: 'ADMIN' },
-  { label: 'User', value: 'USER' },
+  { label: 'Manager', value: 'MANAGER' },
+  { label: 'Internal User', value: 'INTERNAL_USER' },
+  { label: 'External User', value: 'EXTERNAL_USER' },
 ] satisfies SelectOption[]
 
 export const USER_STATUS_OPTIONS = [

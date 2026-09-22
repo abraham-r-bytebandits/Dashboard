@@ -1,7 +1,7 @@
 "use client"
 
 import { useLocation, Link } from "react-router-dom"
-import { Bell, ChevronRight, LayoutDashboard, Briefcase, Shield, Users, FileText, Image as ImageIcon } from "lucide-react"
+import { Bell, ChevronRight, LayoutDashboard, Briefcase, Shield, Users, FileText, Image as ImageIcon, Settings as SettingsIcon } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
@@ -117,6 +117,14 @@ function getBreadcrumbInfo(pathname: string): BreadcrumbInfo {
       sectionIcon: <ImageIcon className="size-3.5 text-pink-500" />,
       sectionUrl: "/image-converter",
       title: "Image Converter",
+    }
+  }
+  if (pathname.startsWith("/settings")) {
+    return {
+      section: "Account",
+      sectionIcon: <SettingsIcon className="size-3.5 text-brand-blue" />,
+      sectionUrl: "/settings",
+      title: "Settings & Profile",
     }
   }
 

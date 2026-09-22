@@ -23,6 +23,9 @@ export type User = {
   roles: string[]
   permissions: string[]
   providers: string[]
+  managerPublicId?: string | null
+  managerName?: string | null
+  accessiblePages?: AppPagePermission[] | null
 }
 
 export type LoginPayload = {
@@ -119,8 +122,29 @@ export type ContactMessage = {
 
 export type MessageStatus = 'new' | 'read' | 'replied' | 'archived'
 
+// --- Page Permissions & Access Control ---
+export type AppPagePermission =
+  | 'dashboard'
+  | 'fixed-costs'
+  | 'operational-costs'
+  | 'status-board'
+  | 'impact-board'
+  | 'create-assessment'
+  | 'clients'
+  | 'invoices'
+  | 'image-converter'
+  | 'contact-messages'
+  | 'user-management'
+  | 'site-management'
+
 // --- User Management ---
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER'
+export type UserRole =
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'INTERNAL_USER'
+  | 'EXTERNAL_USER'
+  | 'SUPER_ADMIN'
+  | 'USER'
 
 export type FunctionalRole = {
   id: string
@@ -140,6 +164,9 @@ export type UserListItem = {
   roles: UserRole[]
   affiliation?: 'internal' | 'external' | 'INTERNAL' | 'EXTERNAL'
   functionalRole?: string
+  managerPublicId?: string | null
+  managerName?: string | null
+  accessiblePages?: AppPagePermission[] | null
   createdAt: string
   lastLoginAt?: string
 }
@@ -227,4 +254,5 @@ export type ApiError = {
 }
 
 // --- Work Assignment ---
-export type { Priority, WorkStatus, UserRole as WorkUserRole, UserAffiliation, Assignee, Milestone, WorkItem } from './work'
+export type { Priority, WorkStatus, UserRole as WorkUserRole, UserAffiliation, Assignee, Milestone, SubTask, WorkItem } from './work'
+

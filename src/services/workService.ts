@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/apiClient'
 import { queryClient } from '@/lib/queryClient'
-import type { WorkItem, WorkStatus, Priority } from '@/types/work'
+import type { WorkItem, WorkStatus, Priority, Assignee, SubTask } from '@/types/work'
+
 
 const WORK_STORAGE_KEY = 'work-assignment-state'
 
@@ -65,6 +66,8 @@ export const workService = {
       attachments: data.attachments || [],
       commentsCount: data.commentsCount || 0,
       createdAt: new Date().toISOString(),
+      subtasks: data.subtasks || [],
+      isMainCompleted: Boolean(data.isMainCompleted),
     }
 
     try {
@@ -87,6 +90,18 @@ export const workService = {
     id: string,
     status: WorkStatus
   ): Promise<void> => {
+    const VALID_STATUSES: WorkStatus[] = [
+      'new',
+      'todo',
+      'clarifications',
+      'under_analysis',
+      'approval',
+    ]
+    if (!VALID_STATUSES.includes(status)) {
+      console.warn(`[workService] Rejecting invalid status update: "${status}" for item "${id}"`)
+      return
+    }
+
     try {
       await apiClient.patch(`/work-items/${id}/status`, { status })
     } catch {
@@ -98,6 +113,7 @@ export const workService = {
       item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, status } : item
     )
     saveStoredWorkItems(updated)
+    queryClient.setQueryData(['work-items'], updated)
     queryClient.invalidateQueries({ queryKey: ['work-items'] })
     queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
   },
@@ -106,6 +122,12 @@ export const workService = {
     id: string,
     priority: Priority
   ): Promise<void> => {
+    const VALID_PRIORITIES: Priority[] = ['high', 'medium', 'low']
+    if (!VALID_PRIORITIES.includes(priority)) {
+      console.warn(`[workService] Rejecting invalid priority update: "${priority}" for item "${id}"`)
+      return
+    }
+
     try {
       await apiClient.patch(`/work-items/${id}/priority`, { priority })
     } catch {
@@ -117,6 +139,7 @@ export const workService = {
       item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, priority } : item
     )
     saveStoredWorkItems(updated)
+    queryClient.setQueryData(['work-items'], updated)
     queryClient.invalidateQueries({ queryKey: ['work-items'] })
     queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
   },
@@ -130,19 +153,30 @@ export const workService = {
       const res = await apiClient.patch(`/work-items/${id}/milestone`, {
         completed,
         total,
+        milestone: {
+          completed,
+          total,
+        },
       })
       const updatedItem = res.data?.data || res.data
       if (updatedItem) {
         const items = getStoredWorkItems()
         saveStoredWorkItems(
-          items.map((item) => (item.id === id || (item as any).publicId === id || (item as any).customId === id ? { ...item, ...updatedItem } : item))
+          items.map((item) =>
+            item.id === id || (item as any).publicId === id || (item as any).customId === id
+              ? { ...item, ...updatedItem }
+              : item
+          )
+        )
+        queryClient.setQueryData(['work-item-detail', id], (old: any) =>
+          old ? { ...old, ...updatedItem } : updatedItem
         )
         queryClient.invalidateQueries({ queryKey: ['work-items'] })
         queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
         return updatedItem
       }
-    } catch {
-      // Backend fallback
+    } catch (err) {
+      console.warn('Backend updateWorkItemMilestone error, using local fallback:', err)
     }
 
     const items = getStoredWorkItems()
@@ -153,7 +187,7 @@ export const workService = {
           ...item,
           milestone: {
             completed,
-            total: total !== undefined ? total : item.milestone.total,
+            total: total !== undefined ? total : item.milestone?.total || 1,
           },
         }
         return updatedItem
@@ -161,10 +195,148 @@ export const workService = {
       return item
     })
     saveStoredWorkItems(updated)
+    if (updatedItem) {
+      queryClient.setQueryData(['work-item-detail', id], updatedItem)
+    }
     queryClient.invalidateQueries({ queryKey: ['work-items'] })
     queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
     return updatedItem
   },
+
+  updateWorkItem: async (
+    id: string,
+    updates: Partial<WorkItem>
+  ): Promise<WorkItem> => {
+    if (updates.milestone) {
+      try {
+        await apiClient.patch(`/work-items/${id}/milestone`, {
+          completed: updates.milestone.completed,
+          total: updates.milestone.total,
+          milestone: updates.milestone,
+        })
+      } catch {
+        // Fallback or continue
+      }
+    }
+
+    try {
+      const res = await apiClient.patch(`/work-items/${id}`, updates)
+      const updated = res.data?.data || res.data
+      if (updated) {
+        const items = getStoredWorkItems()
+        const newItems = items.map((item) =>
+          item.id === id || (item as any).publicId === id || (item as any).customId === id
+            ? {
+                ...item,
+                ...updated,
+                ...(updates.milestone ? { milestone: updates.milestone } : {}),
+              }
+            : item
+        )
+        saveStoredWorkItems(newItems)
+        queryClient.setQueryData(['work-item-detail', id], (old: any) =>
+          old ? { ...old, ...updated, ...(updates.milestone ? { milestone: updates.milestone } : {}) } : updated
+        )
+        queryClient.invalidateQueries({ queryKey: ['work-items'] })
+        queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+        return updated
+      }
+    } catch {
+      // Backend fallback
+    }
+
+    const items = getStoredWorkItems()
+    let updatedItem: WorkItem | null = null
+    const newItems = items.map((item) => {
+      if (item.id === id || (item as any).publicId === id || (item as any).customId === id) {
+        updatedItem = { ...item, ...updates }
+        return updatedItem
+      }
+      return item
+    })
+    saveStoredWorkItems(newItems)
+    if (updatedItem) {
+      queryClient.setQueryData(['work-item-detail', id], updatedItem)
+    }
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+    return updatedItem || ({ id, ...updates } as WorkItem)
+  },
+
+  updateWorkItemSubtasks: async (
+    id: string,
+    subtasks: SubTask[],
+    isMainCompleted?: boolean
+  ): Promise<WorkItem | null> => {
+    const isMainDone = isMainCompleted !== undefined ? isMainCompleted : false
+    const total = 1 + subtasks.length
+    const completed = (isMainDone ? 1 : 0) + subtasks.filter((s) => s.isCompleted).length
+
+    const updates: Partial<WorkItem> = {
+      subtasks,
+      ...(isMainCompleted !== undefined ? { isMainCompleted } : {}),
+      milestone: { completed, total },
+    }
+
+    try {
+      const res = await apiClient.patch(`/work-items/${id}`, updates)
+      const updated = res.data?.data || res.data
+      if (updated) {
+        const items = getStoredWorkItems()
+        const newItems = items.map((item) =>
+          item.id === id || (item as any).publicId === id || (item as any).customId === id
+            ? {
+                ...item,
+                ...updated,
+                subtasks,
+                ...(isMainCompleted !== undefined ? { isMainCompleted } : {}),
+                milestone: { completed, total },
+              }
+            : item
+        )
+        saveStoredWorkItems(newItems)
+        queryClient.setQueryData(['work-item-detail', id], (old: any) =>
+          old
+            ? {
+                ...old,
+                ...updated,
+                subtasks,
+                ...(isMainCompleted !== undefined ? { isMainCompleted } : {}),
+                milestone: { completed, total },
+              }
+            : updated
+        )
+        queryClient.invalidateQueries({ queryKey: ['work-items'] })
+        queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+        return updated
+      }
+    } catch (err) {
+      console.warn('Backend updateWorkItemSubtasks error, using local fallback:', err)
+    }
+
+    const items = getStoredWorkItems()
+    let updatedItem: WorkItem | null = null
+    const newItems = items.map((item) => {
+      if (item.id === id || (item as any).publicId === id || (item as any).customId === id) {
+        updatedItem = {
+          ...item,
+          subtasks,
+          ...(isMainCompleted !== undefined ? { isMainCompleted } : {}),
+          milestone: { completed, total },
+        }
+        return updatedItem
+      }
+      return item
+    })
+    saveStoredWorkItems(newItems)
+    if (updatedItem) {
+      queryClient.setQueryData(['work-item-detail', id], updatedItem)
+    }
+    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    queryClient.invalidateQueries({ queryKey: ['work-item-detail', id] })
+    return updatedItem
+  },
+
 
   deleteWorkItem: async (id: string): Promise<void> => {
     try {
@@ -176,6 +348,19 @@ export const workService = {
     const items = getStoredWorkItems()
     saveStoredWorkItems(items.filter((item) => item.id !== id && (item as any).publicId !== id && (item as any).customId !== id))
     queryClient.invalidateQueries({ queryKey: ['work-items'] })
+  },
+
+  getAssignableUsers: async (): Promise<Assignee[]> => {
+    try {
+      const res = await apiClient.get('/work-items/assignable-users')
+      const data = res.data?.data || res.data
+      if (Array.isArray(data)) {
+        return data
+      }
+    } catch {
+      // Backend fallback to empty or handled by caller
+    }
+    return []
   },
 }
 

@@ -5,14 +5,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   MoreVertical,
   Paperclip,
-  MessageSquare,
   Flag,
-  Calendar,
   Trash2,
-  Eye,
-  Star,
+  FileEdit,
+  ExternalLink,
 } from 'lucide-react'
-import { format, isValid } from 'date-fns'
 import { Dropdown, type MenuProps } from 'antd'
 import type { WorkItem } from '@/types/work'
 import { cn } from '@/lib/utils'
@@ -22,34 +19,20 @@ import { workService } from '@/services/workService'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 
-const DEFAULT_BADGE_CLASSNAME = 'bg-muted text-muted-foreground border-border'
-
-function stripHtml(html?: string) {
-  if (!html) return ''
-  return html.replace(/<[^>]*>?/gm, '').trim()
-}
-
 type WorkCardProps = {
   item: WorkItem
   showStatus?: boolean
 }
 
-export function WorkCard({ item, showStatus }: WorkCardProps) {
+export function WorkCard({ item }: WorkCardProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const { user, isAdmin, isSuperAdmin } = useAuth()
+  const { user, isAdmin, isSuperAdmin, isManager } = useAuth()
   const pointerStartPos = useRef<{ x: number; y: number } | null>(null)
-
-  const isAssignee = !!(
-    user &&
-    item.assignees?.some(
-      (a) =>
-        (a.email && user.email && a.email.toLowerCase() === user.email.toLowerCase()) ||
-        a.id === user.id ||
-        a.id === user.publicId
-    )
-  )
-  const canSetPriority = isAdmin || isSuperAdmin
+  const isCreator = !!(user && (item as any).createdByPublicId === user.publicId)
+  const isItemManager = !!(user && ((item as any).managerPublicId === user.publicId || (item as any).managerPublicId === user.id))
+  const canManage = isAdmin || isSuperAdmin || isItemManager || isCreator
+  const canSetPriority = isAdmin || isSuperAdmin || isItemManager
   const canDelete = isAdmin || isSuperAdmin
 
   const handleOpenDetails = () => {
@@ -88,74 +71,23 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
     transition,
   }
 
-  const priorityConfig = {
-    high: {
-      label: 'High',
-      className:
-        'bg-kanban-board-circle-red/10 text-kanban-board-circle-red border-kanban-board-circle-red/30',
-    },
-    medium: {
-      label: 'Medium',
-      className:
-        'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30',
-    },
-    low: {
-      label: 'Low',
-      className:
-        'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30',
-    },
-  }
-
-  const statusConfig = {
-    new: {
-      label: 'New',
-      className:
-        'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan border-kanban-board-circle-cyan/30',
-    },
-    todo: {
-      label: 'To do',
-      className:
-        'bg-kanban-board-circle-blue/10 text-kanban-board-circle-blue border-kanban-board-circle-blue/30',
-    },
-    clarifications: {
-      label: 'Clarifications',
-      className:
-        'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow border-kanban-board-circle-yellow/30',
-    },
-    under_analysis: {
-      label: 'Under analysis',
-      className:
-        'bg-kanban-board-circle-purple/10 text-kanban-board-circle-purple border-kanban-board-circle-purple/30',
-    },
-    approval: {
-      label: 'Approval',
-      className:
-        'bg-kanban-board-circle-green/10 text-kanban-board-circle-green border-kanban-board-circle-green/30',
-    },
-  }
-
-  const roleColors: Record<string, string> = {
-    Developer:
-      'bg-kanban-board-circle-indigo/10 text-kanban-board-circle-indigo',
-    Marketing: 'bg-kanban-board-circle-pink/10 text-kanban-board-circle-pink',
-    Design: 'bg-kanban-board-circle-yellow/10 text-kanban-board-circle-yellow',
-    Product: 'bg-kanban-board-circle-violet/10 text-kanban-board-circle-violet',
-    QA: 'bg-kanban-board-circle-cyan/10 text-kanban-board-circle-cyan',
-    Operations: 'bg-kanban-board-circle-gray/10 text-kanban-board-circle-gray',
-  }
-
-  const dueDate = item.dueDate ? new Date(item.dueDate) : null
-  const dueDateLabel = dueDate && isValid(dueDate)
-    ? format(dueDate, 'dd MMM, yyyy')
-    : undefined
-
   const menuItems: MenuProps['items'] = [
     {
       key: 'view-details',
-      icon: <Eye className="h-3.5 w-3.5" />,
-      label: 'View Full Details',
+      icon: <ExternalLink className="h-3.5 w-3.5" />,
+      label: 'Open Details',
       onClick: handleOpenDetails,
     },
+    ...(canManage
+      ? [
+          {
+            key: 'edit-assessment',
+            icon: <FileEdit className="h-3.5 w-3.5" />,
+            label: isManager && !isAdmin ? 'Edit / Assign Workers' : 'Edit Assessment',
+            onClick: () => navigate(`/work/edit/${item.id}`),
+          },
+        ]
+      : []),
     ...(canSetPriority
       ? [
           { type: 'divider' as const },
@@ -257,221 +189,120 @@ export function WorkCard({ item, showStatus }: WorkCardProps) {
       : []),
   ]
 
-  const totalMilestones = Math.max(1, item.milestone?.total || 1)
-  const completedMilestones = item.milestone?.completed || 0
+  const subtaskList = Array.isArray(item.subtasks) ? item.subtasks : []
+  const isMainDone = Boolean(item.isMainCompleted || item.status === 'approval')
+  const totalMilestones = 1 + subtaskList.length
+  const completedMilestones = (isMainDone ? 1 : 0) + subtaskList.filter((s) => s.isCompleted).length
   const milestonePercent = Math.round(
     (completedMilestones / totalMilestones) * 100
   )
+  const primaryAssignee = Array.isArray(item.assignees) && item.assignees.length > 0 ? item.assignees[0] : null
+  const attachmentsCount = item.attachmentsCount || (Array.isArray(item.attachments) ? item.attachments.length : 0)
 
   return (
     <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
-        onPointerDown={(e) => {
-          handlePointerDown(e)
-          listeners?.onPointerDown?.(e)
-        }}
-        onClick={handleCardClick}
-        className={cn(
-          'group relative bg-card border-border rounded-xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/40 cursor-grab active:cursor-grabbing',
-          isDragging && 'opacity-50 ring-2 ring-primary',
-        )}
-      >
-        {/* Due Date & Action Menu */}
-        <div className="mb-2.5 flex items-start justify-between">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {dueDateLabel && (
-              <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground/80" />
-                <span>Due: {dueDateLabel}</span>
-              </div>
-            )}
-            {isAssignee && (
-              <span className="bg-primary/10 text-primary border-primary/25 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold">
-                <Star className="h-2.5 w-2.5 fill-primary" />
-                Assigned
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1">
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onPointerDown={(e) => {
+        handlePointerDown(e)
+        listeners?.onPointerDown?.(e)
+      }}
+      onClick={handleCardClick}
+      className={cn(
+        'group relative bg-card border-border/80 rounded-xl border p-3.5 shadow-2xs transition-all hover:shadow-md hover:border-brand-blue/40 cursor-grab active:cursor-grabbing flex flex-col justify-between h-[146px]',
+        isDragging && 'opacity-50 ring-2 ring-brand-blue',
+      )}
+    >
+      {/* Title & Subtle Action Menu */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-foreground text-[14px] font-bold tracking-normal leading-snug line-clamp-2 h-[38px]">
+          {item.title}
+        </h3>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mt-0.5 -mr-1"
+        >
+          <Dropdown
+            menu={{ items: menuItems }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleOpenDetails()
-              }}
-              title="View Full Details"
-              className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity -mt-1 cursor-pointer"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              <Eye className="h-3.5 w-3.5" />
+              <MoreVertical className="h-3.5 w-3.5" />
             </Button>
-
-            <div
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <Dropdown
-                menu={{ items: menuItems }}
-                trigger={['click']}
-                placement="bottomRight"
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  className="-mr-1.5 -mt-1 cursor-pointer"
-                >
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </Button>
-              </Dropdown>
-            </div>
-          </div>
+          </Dropdown>
         </div>
+      </div>
 
-      {/* Title & Description */}
-      <h3 className="text-foreground mb-1.5 text-sm font-semibold tracking-tight">
-        {item.title}
-      </h3>
-      <p className="text-muted-foreground mb-3 line-clamp-2 text-xs leading-relaxed">
-        {stripHtml(item.description)}
-      </p>
-
-      {/* Milestone Progress with Prominent Percentage */}
-      <div className="mb-3">
+      {/* Milestone Progress Row & Bar */}
+      <div>
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground font-medium">Milestone</span>
+          <span className="font-semibold text-gray-500 dark:text-gray-400">Milestone</span>
           <div className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold transition-colors',
-                milestonePercent === 100
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                  : milestonePercent > 0
-                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
+            <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[#EDEAFE] text-[#5542F6] dark:bg-brand-blue/20 dark:text-brand-blue leading-none">
               {milestonePercent}%
             </span>
-            <span className="text-muted-foreground/70 text-[11px]">
+            <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">
               ({completedMilestones}/{totalMilestones})
             </span>
           </div>
         </div>
 
-        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-muted">
           <div
-            className={cn(
-              'h-full transition-all duration-300 rounded-full',
-              milestonePercent === 100
-                ? 'bg-kanban-board-circle-green'
-                : 'bg-blue-600'
-            )}
+            className="h-full rounded-full bg-[#1E2B58] dark:bg-brand-blue transition-all duration-300"
             style={{ width: `${Math.min(100, milestonePercent)}%` }}
           />
         </div>
       </div>
 
-      {/* Assigned For Section */}
-      {item.assignees.length > 0 && (
-        <div className="mb-3">
-          <div className="text-muted-foreground mb-1.5 text-[11px] font-medium">
-            Assigned for
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            {/* Avatar Stack */}
-            <div className="flex -space-x-1.5 overflow-hidden py-0.5">
-              {item.assignees.map((assignee) => (
-                <div
-                  key={assignee.id}
-                  className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full border border-background text-[10px] font-medium shadow-xs"
-                  title={`${assignee.name} — ${assignee.role} (${assignee.affiliation === 'internal' ? 'Internal' : 'External'})`}
-                >
-                  {assignee.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')}
-                </div>
-              ))}
-            </div>
-
-            {/* Role & Affiliation Tags */}
-            <div className="flex flex-wrap items-center gap-1 justify-end">
-              {item.assignees.slice(0, 2).map((assignee) => (
-                <span
-                  key={assignee.id}
-                  className={cn(
-                    'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium',
-                    roleColors[assignee.role] ?? DEFAULT_BADGE_CLASSNAME,
-                  )}
-                  title={`${assignee.name} (${assignee.role} · ${assignee.affiliation === 'internal' ? 'Internal' : 'External'})`}
-                >
-                  {assignee.role} ·{' '}
-                  {assignee.affiliation === 'internal' ? 'Int' : 'Ext'}
-                </span>
-              ))}
-              {item.assignees.length > 2 && (
-                <span className="text-[10px] text-muted-foreground">
-                  +{item.assignees.length - 2}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Row: Priority & Status Badges, Attachments & Comments */}
-      <div className="flex items-center justify-between pt-1 border-t border-border/40">
-        <div className="flex items-center gap-1.5">
-          <div
+      {/* Footer Row: Priority Pill, Role · Affiliation Pill, Attachments Count */}
+      <div className="flex items-center justify-between gap-2 pt-0.5">
+        <div className="flex items-center gap-2 flex-nowrap min-w-0 overflow-hidden">
+          {/* Priority Pill */}
+          <span
             className={cn(
-              'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
-              priorityConfig[item.priority]?.className ??
-                DEFAULT_BADGE_CLASSNAME,
+              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 leading-none',
+              item.priority === 'high'
+                ? 'bg-[#FDF2F4] text-[#E13454] border-[#FCD7DE] dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/40'
+                : item.priority === 'low'
+                ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40'
+                : 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40'
             )}
           >
-            <Flag className="h-3 w-3" />
-            {priorityConfig[item.priority]?.label ?? item.priority}
+            <Flag className="h-3 w-3 fill-current" />
+            <span className="capitalize">{item.priority || 'Medium'}</span>
+          </span>
+
+          {/* Role · Affiliation Pill */}
+          {primaryAssignee && (
+            <span
+              className="inline-flex items-center rounded-md bg-[#F0EEFF] text-[#6355E8] dark:bg-purple-950/40 dark:text-purple-300 px-2.5 py-0.5 text-xs font-medium truncate max-w-[140px] leading-none"
+              title={`${primaryAssignee.name} (${primaryAssignee.role})`}
+            >
+              {primaryAssignee.role || 'Staff'} · {primaryAssignee.affiliation === 'external' ? 'Ext' : 'Int'}
+            </span>
+          )}
+        </div>
+
+        {/* Attachments */}
+        {attachmentsCount > 0 && (
+          <div
+            className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 shrink-0 ml-auto"
+            title={`${attachmentsCount} attachment${attachmentsCount > 1 ? 's' : ''}`}
+          >
+            <Paperclip className="h-3.5 w-3.5 -rotate-45" />
+            <span className="font-medium">{attachmentsCount}</span>
           </div>
-
-          {showStatus && (
-            <div
-              className={cn(
-                'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-                statusConfig[item.status]?.className ?? DEFAULT_BADGE_CLASSNAME,
-              )}
-            >
-              {statusConfig[item.status]?.label ?? item.status}
-            </div>
-          )}
-        </div>
-
-        <div className="text-muted-foreground flex items-center gap-2.5 text-xs">
-          {item.attachmentsCount > 0 && (
-            <span
-              className="flex items-center gap-1"
-              title={`${item.attachmentsCount} attachments`}
-            >
-              <Paperclip className="h-3 w-3" />
-              {item.attachmentsCount}
-            </span>
-          )}
-          {item.commentsCount > 0 && (
-            <span
-              className="flex items-center gap-1"
-              title={`${item.commentsCount} comments`}
-            >
-              <MessageSquare className="h-3 w-3" />
-              {item.commentsCount}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )

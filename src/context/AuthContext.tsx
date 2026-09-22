@@ -3,7 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { setUser, setShowModal, setLoading } from '@/store/authSlice'
 import { apiClient } from '@/lib/apiClient'
-import type { User } from '@/types'
+import type { User, AppPagePermission } from '@/types'
+import {
+  isUserAdmin,
+  isUserManager,
+  isInternalUser as isInternalUserCheck,
+  isExternalUser as isExternalUserCheck,
+  hasUserPageAccess,
+  canUserEditPage,
+  getPagePermissionLevel,
+  type PagePermissionLevel,
+} from '@/lib/permissions'
 
 type AuthContextType = {
   user: User | null
@@ -15,6 +25,13 @@ type AuthContextType = {
   loading: boolean
   isAdmin: boolean
   isSuperAdmin: boolean
+  isManager: boolean
+  isInternalUser: boolean
+  isExternalUser: boolean
+  hasPageAccess: (pageKey?: AppPagePermission) => boolean
+  canEditPage: (pageKey?: AppPagePermission) => boolean
+  getPagePermission: (pageKey?: AppPagePermission) => PagePermissionLevel
+  accessiblePages: AppPagePermission[]
   onAuthSuccess: (accessToken: string, refreshToken: string, remember: boolean) => Promise<void>
 }
 
@@ -31,17 +48,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const showModal = useAppSelector((state) => state.auth.showModal)
   const loading = useAppSelector((state) => state.auth.loading)
 
-  const isAdmin = (() => {
-    if (!user) return false
-    const roles = Array.isArray(user.roles) ? user.roles : []
-    return roles.some((r) => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'SUPER_ADMIN')
-  })()
-
-  const isSuperAdmin = (() => {
-    if (!user) return false
-    const roles = Array.isArray(user.roles) ? user.roles : []
-    return roles.some((r) => r.toUpperCase() === 'SUPER_ADMIN')
-  })()
+  const isAdmin = isUserAdmin(user)
+  const isSuperAdmin = isAdmin
+  const isManager = isUserManager(user)
+  const isInternalUser = isInternalUserCheck(user)
+  const isExternalUser = isExternalUserCheck(user)
+  const hasPageAccess = (pageKey?: AppPagePermission) => hasUserPageAccess(user, pageKey)
+  const canEditPage = (pageKey?: AppPagePermission) => canUserEditPage(user, pageKey)
+  const getPagePermission = (pageKey?: AppPagePermission): PagePermissionLevel =>
+    pageKey ? getPagePermissionLevel(user, pageKey) : 'none'
+  const accessiblePages: AppPagePermission[] =
+    user && Array.isArray(user.accessiblePages) ? user.accessiblePages : []
 
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
@@ -56,8 +73,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
 
         const res = await apiClient.get<{ data: User }>('/user/profile')
-        const userData = res.data?.data || res.data
-        dispatch(setUser(userData as User))
+        let userData = (res.data?.data || res.data) as User
+        try {
+          const override = localStorage.getItem('user_profile_override')
+          if (override) {
+            const parsed = JSON.parse(override)
+            if (parsed) {
+              const profileOverride = parsed.profile || parsed
+              userData = {
+                ...userData,
+                username: parsed.username || userData.username,
+                // Guarantee roles and access are strictly preserved from the authenticated session
+                roles: userData.roles && userData.roles.length > 0 ? userData.roles : ['USER'],
+                profile: {
+                  ...userData.profile,
+                  ...(profileOverride.firstName !== undefined ? { firstName: profileOverride.firstName } : {}),
+                  ...(profileOverride.lastName !== undefined ? { lastName: profileOverride.lastName } : {}),
+                  ...(profileOverride.phone !== undefined ? { phone: profileOverride.phone } : {}),
+                  ...(profileOverride.dateOfBirth !== undefined ? { dateOfBirth: profileOverride.dateOfBirth } : {}),
+                  ...(profileOverride.gender !== undefined ? { gender: profileOverride.gender } : {}),
+                  ...(profileOverride.profileImage !== undefined ? { profileImage: profileOverride.profileImage } : {}),
+                },
+              }
+            }
+          }
+        } catch {
+          // ignore parsing error
+        }
+        dispatch(setUser(userData))
       } catch {
         localStorage.clear()
         sessionStorage.clear()
@@ -137,6 +180,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     isAdmin,
     isSuperAdmin,
+    isManager,
+    isInternalUser,
+    isExternalUser,
+    hasPageAccess,
+    canEditPage,
+    getPagePermission,
+    accessiblePages,
     onAuthSuccess,
   }
 

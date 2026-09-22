@@ -68,7 +68,7 @@ export default function ReportsDashboard() {
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen w-full">
-            <h1 className="text-2xl font-semibold text-[#405189] mb-6">Financial Reports</h1>
+            <h1 className="text-2xl font-semibold text-brand-blue mb-6">Financial Reports</h1>
 
             <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
@@ -106,7 +106,7 @@ export default function ReportsDashboard() {
                 </Col>
             </Row>
 
-            <h2 className="text-xl font-semibold text-[#405189] mb-4 mt-8">Recent Cash Flow Sync</h2>
+            <h2 className="text-xl font-semibold text-brand-blue mb-4 mt-8">Recent Cash Flow Sync</h2>
             <Card className="shadow-sm rounded-xl border-gray-100 p-2 text-center text-gray-500">
                 Detailed ledger views are currently maintained via third-party accounting software integration overrides.
                 Full ledger and P&L export features will be available in v2.0.

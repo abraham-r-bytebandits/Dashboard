@@ -61,7 +61,7 @@ export default function LoginForm() {
       <CardContent className="p-6 pt-8">
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-[#405189]">Welcome back</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-brand-blue">Welcome back</h2>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
           </div>
 
@@ -123,7 +123,7 @@ export default function LoginForm() {
                 type="checkbox"
                 id="remember"
                 {...register('remember')}
-                className="h-4 w-4 rounded border-gray-300 accent-[#405189]"
+                className="h-4 w-4 rounded border-gray-300 accent-brand-blue"
               />
               <label htmlFor="remember" className="text-sm text-gray-600 select-none">
                 Remember me
@@ -133,7 +133,7 @@ export default function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full h-10 !text-white font-semibold mt-4 bg-[#405189] hover:bg-[#344270] transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+            className="w-full h-10 !text-white font-semibold mt-4 bg-brand-blue hover:bg-brand-blue/90 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
             disabled={isSubmitting || loginMutation.isPending}
           >
             {isSubmitting || loginMutation.isPending ? 'Signing In...' : 'Sign In'}

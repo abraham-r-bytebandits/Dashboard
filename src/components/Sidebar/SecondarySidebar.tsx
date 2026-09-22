@@ -42,7 +42,7 @@ const SidebarContent = ({ payments, loading }: { payments: RecentPayment[]; load
                                     {payment.clientName}
                                 </span>
                             </div>
-                            <span className={`text-sm font-semibold flex-shrink-0 ${payment.type === 'DEBIT' ? 'text-[#000000]' : 'text-[#000000]'}`}>
+                            <span className={`text-sm font-semibold flex-shrink-0 ${payment.type === 'DEBIT' ? 'text-foreground' : 'text-foreground'}`}>
                                 {payment.type === 'DEBIT' ? '-' : '+'}₹{payment.amount.toLocaleString()}
                             </span>
                         </div>
@@ -63,7 +63,7 @@ const SecondarySidebar = ({ open, onClose, payments, loading }: SecondarySidebar
             closeIcon={<X className="h-4 w-4 text-gray-500" />}
             styles={{
                 header: {
-                    borderBottom: '1px solid #f3f4f6',
+                    borderBottom: '1px solid hsl(var(--border))',
                     padding: '16px 20px',
                 },
                 body: {

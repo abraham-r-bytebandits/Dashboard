@@ -84,7 +84,7 @@ const DashboardTable = () => {
           </div>
           <a
             href="#"
-            className="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm text-[#7db4ebff] bg-[#ecf3faff] border border-[#7db4ebff] no-underline whitespace-nowrap self-start"
+            className="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm text-blue-500 bg-blue-50 border border-blue-300 no-underline whitespace-nowrap self-start"
           >
             <FileTextOutlined />
             Generate Report

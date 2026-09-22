@@ -23,10 +23,12 @@ import { cn } from '@/lib/utils'
 
 export type RichTextEditorProps = {
   value: string
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
   placeholder?: string
   className?: string
   minHeight?: string
+  readOnly?: boolean
+  disabled?: boolean
 }
 
 export function RichTextEditor({
@@ -35,7 +37,10 @@ export function RichTextEditor({
   placeholder = 'Provide scope of work, technical requirements, acceptance criteria...',
   className,
   minHeight = '140px',
+  readOnly = false,
+  disabled = false,
 }: RichTextEditorProps) {
+  const isReadOnly = readOnly || disabled
   const editorRef = React.useRef<HTMLDivElement>(null)
   const isUpdatingRef = React.useRef(false)
   const [activeFormats, setActiveFormats] = React.useState<Record<string, boolean>>({})
@@ -51,7 +56,7 @@ export function RichTextEditor({
   }, [value])
 
   const checkFormats = () => {
-    if (typeof document === 'undefined') return
+    if (typeof document === 'undefined' || isReadOnly) return
     setActiveFormats({
       bold: document.queryCommandState('bold'),
       italic: document.queryCommandState('italic'),
@@ -63,7 +68,7 @@ export function RichTextEditor({
   }
 
   const exec = (command: string, val: string | undefined = undefined) => {
-    if (isSourceMode) return
+    if (isReadOnly || isSourceMode) return
     editorRef.current?.focus()
     document.execCommand(command, false, val)
     checkFormats()
@@ -71,16 +76,17 @@ export function RichTextEditor({
   }
 
   const handleInput = () => {
-    if (!editorRef.current) return
+    if (isReadOnly || !editorRef.current) return
     isUpdatingRef.current = true
     const html = editorRef.current.innerHTML
     // Clean empty paragraphs or single <br>
     const cleanHtml = html === '<br>' || html === '<p><br></p>' ? '' : html
-    onChange(cleanHtml)
+    onChange?.(cleanHtml)
     isUpdatingRef.current = false
   }
 
   const handleInsertLink = () => {
+    if (isReadOnly) return
     const url = window.prompt('Enter link URL (e.g. https://...):')
     if (url) {
       exec('createLink', url)
@@ -88,6 +94,7 @@ export function RichTextEditor({
   }
 
   const handleFormatBlock = (tag: string) => {
+    if (isReadOnly) return
     exec('formatBlock', `<${tag}>`)
   }
 
@@ -105,12 +112,15 @@ export function RichTextEditor({
   return (
     <div
       className={cn(
-        'border-input focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[2px] bg-card rounded-lg border transition-all shadow-2xs overflow-hidden',
+        'border-input bg-card rounded-lg border transition-all shadow-2xs overflow-hidden',
+        !isReadOnly && 'focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[2px]',
+        isReadOnly && 'bg-muted/10 opacity-90',
         className
       )}
     >
       {/* Rich Text Toolbar */}
-      <div className="bg-muted/40 border-b border-border/60 p-1.5 flex flex-wrap items-center justify-between gap-1 text-xs select-none">
+      {!isReadOnly && (
+        <div className="bg-muted/40 border-b border-border/60 p-1.5 flex flex-wrap items-center justify-between gap-1 text-xs select-none">
         <div className="flex flex-wrap items-center gap-0.5">
           {/* Headings */}
           <button
@@ -327,12 +337,13 @@ export function RichTextEditor({
           </button>
         </div>
       </div>
+      )}
 
       {/* Editor Content Body */}
-      {isSourceMode ? (
+      {!isReadOnly && isSourceMode ? (
         <textarea
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           style={{ minHeight }}
           className="w-full p-3.5 font-mono text-xs text-foreground bg-background outline-none resize-y"
@@ -341,14 +352,15 @@ export function RichTextEditor({
         <div className="relative">
           <div
             ref={editorRef}
-            contentEditable
-            onInput={handleInput}
-            onKeyUp={checkFormats}
-            onMouseUp={checkFormats}
+            contentEditable={!isReadOnly}
+            onInput={isReadOnly ? undefined : handleInput}
+            onKeyUp={isReadOnly ? undefined : checkFormats}
+            onMouseUp={isReadOnly ? undefined : checkFormats}
             style={{ minHeight }}
             data-placeholder={placeholder}
             className={cn(
               'w-full p-3.5 text-sm text-foreground bg-background outline-none overflow-y-auto',
+              isReadOnly ? 'cursor-default select-text' : '',
               'prose prose-sm dark:prose-invert max-w-none',
               // Rich content styles
               '[&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:mt-1',
@@ -372,8 +384,13 @@ export function RichTextEditor({
       {/* Bottom Bar: Stats */}
       <div className="bg-muted/20 border-t border-border/40 px-3 py-1 flex items-center justify-between text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Rich Text Editor
+          <span
+            className={cn(
+              'inline-block h-1.5 w-1.5 rounded-full',
+              isReadOnly ? 'bg-muted-foreground/50' : 'bg-emerald-500'
+            )}
+          />
+          {isReadOnly ? 'Read-only' : 'Rich Text Editor'}
         </span>
         <span>
           {wordCount} {wordCount === 1 ? 'word' : 'words'} · {plainText.length} chars

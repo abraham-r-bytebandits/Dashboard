@@ -1,26 +1,36 @@
 // src/lib/sidebar.ts
 import {
   Home,
-  ShoppingCart,
   Users,
   Settings,
   TrendingUp,
   BarChart,
-  ShieldCheck,
   Briefcase,
-  FileText,
-  Image,
-  Globe,
-  Mail,
   Kanban,
+  CreditCard,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react"
+import type { AppPagePermission } from "@/types"
+
+export type NavSubItem = {
+  title: string
+  url: string
+  pageKey?: AppPagePermission
+  roles?: string[]
+}
+
+export type NavMainItem = {
+  title: string
+  url: string
+  icon?: LucideIcon
+  isActive?: boolean
+  pageKey?: AppPagePermission
+  isAdminOnly?: boolean
+  items?: NavSubItem[]
+}
 
 export const data = {
-  user: {
-    name: "John Doe",
-    email: "john@example.com",
-    avatar: "/avatars/john.jpg",
-  },
   teams: [
     {
       name: "Sales Team",
@@ -43,56 +53,8 @@ export const data = {
       title: "Dashboard",
       url: "/",
       icon: Home,
+      pageKey: "dashboard" as AppPagePermission,
       isActive: true,
-    },
-    {
-      title: "Admin Tools",
-      url: "#",
-      icon: ShieldCheck,
-      isSuperAdminOnly: true,
-      items: [
-        {
-          title: "User Management",
-          url: "/admin/users",
-        },
-      ],
-    },
-    {
-      title: "Fixed Costs",
-      url: "#",
-      icon: ShoppingCart,
-      isAdminOnly: true,
-      items: [
-        {
-          title: "Add Fixed Cost",
-          url: "/add-fixed-cost",
-        },
-        {
-          title: "Edit Fixed Cost",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Operational Costs",
-      url: "#",
-      icon: Users,
-      isAdminOnly: true,
-      items: [
-        {
-          title: "Add Operational Cost",
-          url: "/add-operational-cost",
-        },
-        {
-          title: "Edit Operational Cost",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Image Converter",
-      url: "/image-converter",
-      icon: Image,
     },
     {
       title: "Work & Priorities",
@@ -102,14 +64,18 @@ export const data = {
         {
           title: "Status Board",
           url: "/work/status-board",
+          pageKey: "status-board" as AppPagePermission,
         },
         {
           title: "Impact Board",
           url: "/work/impact-board",
+          pageKey: "impact-board" as AppPagePermission,
         },
         {
           title: "Create Assessment",
           url: "/work/create",
+          pageKey: "create-assessment" as AppPagePermission,
+          roles: ["ADMIN", "SUPER_ADMIN", "MANAGER"],
         },
       ],
     },
@@ -117,23 +83,74 @@ export const data = {
       title: "Clients",
       url: "/clients",
       icon: Briefcase,
+      pageKey: "clients" as AppPagePermission,
     },
     {
-      title: "Invoices",
-      url: "/invoices",
-      icon: FileText,
+      title: "Finances",
+      url: "#",
+      icon: CreditCard,
+      items: [
+        {
+          title: "Invoices",
+          url: "/invoices",
+          pageKey: "invoices" as AppPagePermission,
+        },
+        {
+          title: "Fixed Costs",
+          url: "/add-fixed-cost",
+          pageKey: "fixed-costs" as AppPagePermission,
+        },
+        {
+          title: "Operational Costs",
+          url: "/add-operational-cost",
+          pageKey: "operational-costs" as AppPagePermission,
+        },
+      ],
     },
     {
-      title: "Site Management",
-      url: "/admin/sites",
-      isSuperAdminOnly: true,
-      icon: Globe,
-    },
-    {
-      title: "Contact Messages",
-      url: "/admin/contacts",
+      title: "Users",
+      url: "#",
+      icon: Users,
       isAdminOnly: true,
-      icon: Mail,
+      items: [
+        {
+          title: "User Management",
+          url: "/admin/users",
+          pageKey: "user-management" as AppPagePermission,
+        },
+        {
+          title: "User Permissions",
+          url: "/admin/permissions",
+          pageKey: "user-management" as AppPagePermission,
+        },
+        {
+          title: "Functional Roles",
+          url: "/admin/roles",
+          pageKey: "user-management" as AppPagePermission,
+        },
+      ],
+    },
+    {
+      title: "Tools",
+      url: "#",
+      icon: Wrench,
+      items: [
+        {
+          title: "Image Converter",
+          url: "/image-converter",
+          pageKey: "image-converter" as AppPagePermission,
+        },
+        {
+          title: "Site Management",
+          url: "/admin/sites",
+          pageKey: "site-management" as AppPagePermission,
+        },
+        {
+          title: "Contact Messages",
+          url: "/admin/contacts",
+          pageKey: "contact-messages" as AppPagePermission,
+        },
+      ],
     },
     {
       title: "Settings",
@@ -141,20 +158,8 @@ export const data = {
       icon: Settings,
       items: [
         {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Payment",
-          url: "#",
-        },
-        {
-          title: "Shipping",
-          url: "#",
-        },
-        {
-          title: "Notifications",
-          url: "#",
+          title: "Profile & Account",
+          url: "/settings",
         },
       ],
     },

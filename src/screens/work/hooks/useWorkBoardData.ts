@@ -17,11 +17,11 @@ type BoardMode = 'status' | 'priority'
 
 export function useWorkBoardData(mode: BoardMode) {
   const dispatch = useAppDispatch()
-  const { user, isAdmin, isSuperAdmin } = useAuth()
+  const { user, isAdmin, isManager } = useAuth()
 
-  // Regular users default to their assigned tasks; admins default to all tasks
+  // Regular users default and lock to their assigned tasks; admins and managers can toggle
   const [scopeFilter, setScopeFilter] = useState<'all' | 'assigned'>(
-    isAdmin || isSuperAdmin ? 'all' : 'assigned'
+    isAdmin || isManager ? 'all' : 'assigned'
   )
 
   // 1. Fetch work items from API with real-time background sync
@@ -33,17 +33,22 @@ export function useWorkBoardData(mode: BoardMode) {
     staleTime: 0,
   })
 
-  // 2. Fetch users/team members from API
+  // 2. Fetch users/team members from assignable-users endpoint
   const { data: apiUsers = [] } = useQuery<Assignee[]>({
-    queryKey: ['team-directory-users'],
+    queryKey: ['assignable-users', user?.publicId],
     queryFn: async () => {
-      try {
-        const res = await apiClient.get('/admin/users?page=1&pageSize=100')
-        const users = res.data?.data || res.data || []
-        return (Array.isArray(users) ? users : []).map(mapApiUserToAssignee)
-      } catch {
-        return []
+      const users = await workService.getAssignableUsers()
+      if (users && users.length > 0) return users
+      if (isAdmin) {
+        try {
+          const res = await apiClient.get('/admin/users?page=1&pageSize=100')
+          const raw = res.data?.data || res.data || []
+          return (Array.isArray(raw) ? raw : []).map(mapApiUserToAssignee)
+        } catch {
+          return []
+        }
       }
+      return []
     },
     staleTime: 60_000,
   })
@@ -113,16 +118,34 @@ export function useWorkBoardData(mode: BoardMode) {
       affiliationFilter === 'all' ||
       item.assignees.some((assignee) => assignee.affiliation === affiliationFilter)
 
-    const matchesScope =
-      scopeFilter === 'all' ||
-      !user ||
+    const isDirectlyAssigned = !!(
+      user &&
       item.assignees.some(
         (assignee) =>
           (assignee.email && user.email && assignee.email.toLowerCase() === user.email.toLowerCase()) ||
           assignee.id === user.id ||
           assignee.id === user.publicId
-      ) ||
-      (item as any).createdByPublicId === user.publicId
+      )
+    )
+
+    let matchesScope = true
+    if (!user) {
+      matchesScope = true
+    } else if (isAdmin) {
+      matchesScope = scopeFilter === 'all' || isDirectlyAssigned
+    } else if (isManager) {
+      if (scopeFilter === 'assigned') {
+        matchesScope = isDirectlyAssigned
+      } else {
+        matchesScope =
+          (item as any).managerPublicId === user.publicId ||
+          (item as any).createdByPublicId === user.publicId ||
+          isDirectlyAssigned
+      }
+    } else {
+      // Internal or External user: strictly their assigned tasks
+      matchesScope = isDirectlyAssigned
+    }
 
     return (
       matchesSearch &&
@@ -136,13 +159,15 @@ export function useWorkBoardData(mode: BoardMode) {
   const handleMoveItem = async (
     itemId: string,
     newStatus?: WorkStatus,
-    newPriority?: Priority
+    newPriority?: Priority,
+    overId?: string
   ) => {
     dispatch(
       moveWorkItem({
         id: itemId,
         status: newStatus,
         priority: newPriority,
+        overId,
       })
     )
     if (newStatus) {
@@ -151,7 +176,6 @@ export function useWorkBoardData(mode: BoardMode) {
     if (newPriority) {
       await workService.updateWorkItemPriority(itemId, newPriority)
     }
-    queryClient.invalidateQueries({ queryKey: ['work-items'] })
   }
 
   return {

@@ -4,6 +4,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCorners,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -20,6 +21,7 @@ type KanbanBoardProps = {
     itemId: string,
     newStatus?: WorkStatus,
     newPriority?: Priority,
+    overId?: string
   ) => void
 }
 
@@ -85,15 +87,61 @@ export function KanbanBoard({ mode, items, onMoveItem }: KanbanBoardProps) {
       return
     }
 
-    const itemId = active.id as string
-    const targetColumnId = over.id as string
+    const activeItemId = active.id as string
+    const overTargetId = over.id as string
+
+    // Find the item being moved
+    const draggedItem = items.find(
+      (item) => item.id === activeItemId || (item as any).publicId === activeItemId
+    )
+    if (!draggedItem) {
+      setActiveId(null)
+      return
+    }
+
+    // Determine target column and whether we dropped on another card
+    let targetStatus: WorkStatus | undefined = undefined
+    let targetPriority: Priority | undefined = undefined
+    let overCardId: string | undefined = undefined
 
     if (mode === 'status') {
-      const newStatus = targetColumnId as WorkStatus
-      onMoveItem(itemId, newStatus, undefined)
+      const validStatusIds = STATUS_COLUMNS.map((c) => c.id)
+      if (validStatusIds.includes(overTargetId as WorkStatus)) {
+        // Dropped directly on a column container
+        targetStatus = overTargetId as WorkStatus
+      } else {
+        // Dropped on another card
+        const overCard = items.find(
+          (item) => item.id === overTargetId || (item as any).publicId === overTargetId
+        )
+        if (overCard) {
+          targetStatus = overCard.status
+          overCardId = overCard.id
+        }
+      }
+
+      if (targetStatus) {
+        onMoveItem(activeItemId, targetStatus, undefined, overCardId)
+      }
     } else {
-      const newPriority = targetColumnId as Priority
-      onMoveItem(itemId, undefined, newPriority)
+      const validPriorityIds = PRIORITY_COLUMNS.map((c) => c.id)
+      if (validPriorityIds.includes(overTargetId as Priority)) {
+        // Dropped directly on a column container
+        targetPriority = overTargetId as Priority
+      } else {
+        // Dropped on another card
+        const overCard = items.find(
+          (item) => item.id === overTargetId || (item as any).publicId === overTargetId
+        )
+        if (overCard) {
+          targetPriority = overCard.priority
+          overCardId = overCard.id
+        }
+      }
+
+      if (targetPriority) {
+        onMoveItem(activeItemId, undefined, targetPriority, overCardId)
+      }
     }
 
     setActiveId(null)
@@ -124,6 +172,7 @@ export function KanbanBoard({ mode, items, onMoveItem }: KanbanBoardProps) {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

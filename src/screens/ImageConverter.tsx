@@ -124,13 +124,13 @@ const ImageConverter: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 w-full bg-[#F3F3F9] p-4 sm:p-6 lg:p-10 min-h-full">
+    <div className="flex-1 w-full bg-muted p-4 sm:p-6 lg:p-10 min-h-full">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Header Section */}
         <div className="flex flex-col gap-2 mb-8 mt-2 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-[#405189] rounded-xl hidden sm:block">
+            <div className="p-3 bg-blue-50 text-brand-blue rounded-xl hidden sm:block">
               <FileImageOutlined className="text-3xl" />
             </div>
             <div>
@@ -212,7 +212,7 @@ const ImageConverter: React.FC = () => {
             styles={{ body: { padding: '32px', display: 'flex', flexDirection: 'column', flex: 1 } }}
           >
             <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-[#405189] text-xs font-bold text-center">1</span>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-brand-blue text-xs font-bold text-center">1</span>
               Upload Original Image
             </h3>
 
@@ -222,7 +222,7 @@ const ImageConverter: React.FC = () => {
             >
               {fileList.length === 0 ? (
                 <>
-                  <p className="ant-upload-drag-icon text-[#405189] mb-4">
+                  <p className="ant-upload-drag-icon text-brand-blue mb-4">
                     <InboxOutlined className="text-6xl opacity-80" />
                   </p>
                   <p className="text-lg font-semibold text-gray-800 mb-2">Click or drag image to this area</p>
@@ -240,7 +240,7 @@ const ImageConverter: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <p className="text-[#405189] font-semibold text-lg mb-1">Image Ready!</p>
+                      <p className="text-brand-blue font-semibold text-lg mb-1">Image Ready!</p>
                       <p className="text-sm text-gray-400">Click the button below to convert.</p>
                     </>
                   )}

@@ -27,13 +27,13 @@ const SummaryCard = ({
 }) => (
     <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full">
         <div>
-            <p className="text-sm font-medium text-[#000000] mb-2">{title}</p>
-            <h3 className="text-2xl font-bold text-[#000000] mb-2">{value}</h3>
+            <p className="text-sm font-medium text-foreground mb-2">{title}</p>
+            <h3 className="text-2xl font-bold text-foreground mb-2">{value}</h3>
         </div>
 
         <div className="flex justify-between mt-4">
             <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${isPositive ? 'bg-[#EAF7F0] text-emerald-600' : 'bg-[#FDEDEE] text-rose-500'
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${isPositive ? 'bg-success-light text-emerald-600' : 'bg-destructive-light text-rose-500'
                     }`}
             >
                 {isPositive ? (
@@ -104,14 +104,14 @@ const FinancialDashboard = () => {
     }, [sidebarOpen])
 
     return (
-        <div className="flex w-full min-h-screen bg-[#F3F3F9]">
+        <div className="flex w-full min-h-screen bg-muted">
             {/* Main Content Area */}
             <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'xl:mr-[250px]' : ''}`}>
                 <div className="space-y-4 relative overflow-x-hidden p-4 md:p-6">
                     <div>
                         <div className="flex flex-col px-4 md:px-6 p-4 md:p-6 sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl shadow-xs">
                             <div className="flex items-center justify-center gap-4">
-                                <h1 className="text-[28px] md:text-[32px] font-extrabold text-[#000000]">
+                                <h1 className="text-[28px] md:text-[32px] font-extrabold text-foreground">
                                     Expenditure Control Center
                                 </h1>
                             </div>
@@ -120,7 +120,7 @@ const FinancialDashboard = () => {
                                 <DatePickerWithRange />
                                 <Button
                                     size="sm"
-                                    className="h-9 bg-[#405189] !text-white hover:bg-[#405189]"
+                                    className="h-9 bg-brand-blue !text-white hover:bg-brand-blue"
                                     onClick={() => setSidebarOpen((prev) => !prev)}
                                 >
                                     {sidebarOpen ? <ThunderboltOutlined /> : <ThunderboltOutlined />}
@@ -132,12 +132,12 @@ const FinancialDashboard = () => {
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                 <div className="lg:col-span-4 bg-white rounded-xl border border-gray-100 p-6 shadow-sm h-full flex flex-col">
                                     <div className="flex justify-between items-start mb-3">
-                                        <p className="text-sm text-[#000000]">Total Expenditure</p>
+                                        <p className="text-sm text-foreground">Total Expenditure</p>
                                         {(() => {
                                             const changeStr = overview?.expenditureChange !== undefined ? `${overview.expenditureChange}%` : "+ 0%";
                                             const isPositive = !String(changeStr).includes('-');
                                             return (
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${isPositive ? 'bg-[#EAF7F0] text-emerald-600' : 'bg-[#FDEDEE] text-rose-500'}`}>
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${isPositive ? 'bg-success-light text-emerald-600' : 'bg-destructive-light text-rose-500'}`}>
                                                     {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                                                     {changeStr}
                                                 </span>

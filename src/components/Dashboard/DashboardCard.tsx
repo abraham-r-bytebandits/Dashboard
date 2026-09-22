@@ -41,7 +41,7 @@ export const DashboardCard = ({ title, value, change, isPositive, icon, iconBg, 
 
             {/* "View net earnings" link at bottom left */}
             <div>
-                <a href="/" className="text-sm text-[#405189] hover:text-blue-700 underline">
+                <a href="/" className="text-sm text-brand-blue hover:text-blue-700 underline">
                     {link}
                 </a>
             </div>

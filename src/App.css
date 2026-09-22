@@ -60,17 +60,23 @@ html, body, #root {
   --color-kanban-board-circle-gray: var(--kanban-board-circle-gray);
   --color-kanban-board-circle-cyan: var(--kanban-board-circle-cyan);
   --color-kanban-board-circle-blue: var(--kanban-board-circle-blue);
+  --color-brand-blue: var(--brand-blue);
+  --color-success-light: var(--success-light);
+  --color-destructive-light: var(--destructive-light);
 }
 
 :root {
   --radius: 0.625rem;
+  --brand-blue: oklch(0.4145 0.0989 264.69);
+  --success-light: oklch(0.95 0.04 150);
+  --destructive-light: oklch(0.96 0.04 10);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: var(--brand-blue);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -81,7 +87,7 @@ html, body, #root {
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--brand-blue);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -89,12 +95,12 @@ html, body, #root {
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: var(--brand-blue);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: var(--brand-blue);
   --kanban-board-circle-blue: oklch(0.6232 0.1879 259.80);
   --kanban-board-circle-cyan: oklch(0.7146 0.1256 215.13);
   --kanban-board-circle-gray: oklch(0.5513 0.0233 264.36);
@@ -108,14 +114,17 @@ html, body, #root {
 }
 
 .dark {
+  --brand-blue: oklch(0.4145 0.0989 264.69);
+  --success-light: oklch(0.25 0.04 150);
+  --destructive-light: oklch(0.25 0.04 10);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: var(--brand-blue);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -169,4 +178,15 @@ html, body, #root {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Remove blue background on Ant Design tables */
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td,
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected:hover > td,
+.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+  background-color: transparent !important;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background-color: #f9fafb !important;
 }

@@ -1,7 +1,6 @@
-import { Tag, Avatar, Space, Button, message, Popconfirm } from 'antd'
+import { Tag, Avatar, Space, Button, message, Popconfirm, type TableColumnsType } from 'antd'
 import { useState } from 'react'
 import { apiClient } from '@/lib/apiClient'
-import type { ColumnsType } from 'antd/es/table'
 import type { Expense } from '@/types'
 
 export const getColumns = (
@@ -9,8 +8,8 @@ export const getColumns = (
     isSuperAdmin: boolean = false,
     onPaySuccess?: () => void,
     onDeleteSuccess?: () => void
-): ColumnsType<Expense> => {
-    const baseColumns: ColumnsType<Expense> = [
+): TableColumnsType<Expense> => {
+    const baseColumns: TableColumnsType<Expense> = [
         {
             title: "Expense ID",
             dataIndex: "expenseId",
