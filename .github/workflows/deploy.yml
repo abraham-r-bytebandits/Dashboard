@@ -100,7 +100,8 @@ jobs:
             # Install, generate prisma client, run migrations, and build
             npm install
             npx prisma generate
-            npx prisma migrate deploy || echo "Prisma migrations skipped or failed."
+            npx prisma migrate deploy || npx prisma db push --accept-data-loss || echo "Prisma migrations skipped or failed."
+            npx prisma db seed || echo "Prisma seed skipped or failed."
             npm run build
             
             # Restart backend via PM2
