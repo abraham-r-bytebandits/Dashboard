@@ -28,22 +28,17 @@ import {
   serializeAccessiblePages,
   getManagerAllowedPermissionLevel,
 } from '@/lib/permissions'
+import { APP_PAGES } from '@/config/pages.config'
 import type { UserListItem, FunctionalRole, UserRole, AppPagePermission } from '@/types'
 import type { AxiosError } from 'axios'
 
 const { Option } = Select
 
-const DEFAULT_MANAGER_PAGES: AppPagePermission[] = [
-  'dashboard',
-  'status-board',
-  'impact-board',
-  'create-assessment',
-  'clients',
-  'invoices',
-  'fixed-costs',
-  'operational-costs',
-  'image-converter',
-]
+const getDefaultManagerPages = (): AppPagePermission[] => {
+  return (APP_PAGES || [])
+    .filter((p) => p.defaultManagerLevel && p.defaultManagerLevel !== 'none')
+    .map((p) => p.key)
+}
 
 export default function UserAccess() {
   const { isAdmin } = useAuth()
@@ -131,7 +126,7 @@ export default function UserAccess() {
       ) {
         if (primary === 'MANAGER') {
           initialPerms = {}
-          for (const key of DEFAULT_MANAGER_PAGES) {
+          for (const key of getDefaultManagerPages()) {
             initialPerms[key] = 'edit'
           }
         } else if (primary === 'INTERNAL_USER' || primary === 'EXTERNAL_USER') {

@@ -1,214 +1,61 @@
-name: Deploy Vite App to EC2
+name: Build and Deploy Frontend
 
 on:
   push:
     branches:
       - main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
+  packages: write
 
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/dashboard-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 2. Setup Node
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: 22
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 3. Install dependencies
-        run: |
-          npm ci
-          npm install --no-save @tailwindcss/oxide-linux-x64-gnu@4.1.18 lightningcss-linux-x64-gnu@1.30.2 || true
-
-      - name: 4. Build project
-        env:
-          VITE_API_BASE_URL: "/api"
-        run: npm run build
-
-      - name: Copy dist to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
-          host: "crm.thebytebandits.com"
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/*"
-          target: "/home/ec2-user/"
+          context: .
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=/api
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: 6. Deploy to Nginx
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull image and restart frontend
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: "crm.thebytebandits.com"
+          host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. Deploy Frontend static assets
-            sudo rm -rf /usr/share/nginx/html/*
-            sudo cp -r /home/ec2-user/dist/* /usr/share/nginx/html/
-            
-            # 2. Deploy/Start Backend on port 4001
-            echo "=== DEPLOYING BACKEND ==="
-            
-            # Back up existing .env file if it exists to prevent loss of database configuration
-            if [ -f /home/ec2-user/backend/.env ]; then
-              echo "Backing up existing .env file..."
-              cp /home/ec2-user/backend/.env /home/ec2-user/backend_env_backup
-            fi
-            
-            # Ensure it is a valid Git repository
-            if [ ! -d /home/ec2-user/backend/.git ]; then
-              echo "Directory is not a git repository. Re-cloning..."
-              sudo rm -rf /home/ec2-user/backend
-              git clone https://github.com/abraham-r-bytebandits/Dashboard-Backend.git /home/ec2-user/backend
-            else
-              cd /home/ec2-user/backend
-              git fetch origin
-              git checkout main || git checkout -b main
-              git reset --hard origin/main
-              git clean -fd
-              git pull origin main
-            fi
-            
-            cd /home/ec2-user/backend
-            
-            # Restore .env backup
-            if [ -f /home/ec2-user/backend_env_backup ]; then
-              echo "Restoring .env file..."
-              mv /home/ec2-user/backend_env_backup .env
-            fi
-            
-            # Ensure PORT=4001 is set in .env
-            if [ -f .env ]; then
-              if ! grep -q "PORT=" .env; then
-                echo "PORT=4001" >> .env
-              else
-                # Replace any existing PORT definition with PORT=4001
-                sed -i 's/^PORT=.*/PORT=4001/' .env
-              fi
-            else
-              echo "PORT=4001" > .env
-            fi
-
-            # Copy SMTP settings from /home/ec2-user/.env.local into backend .env if present
-            if [ -f /home/ec2-user/.env.local ]; then
-              echo "Syncing SMTP configuration from /home/ec2-user/.env.local..."
-              cat /home/ec2-user/.env.local >> .env || true
-            fi
-            
-            # Install, generate prisma client, run migrations, and build
-            npm install
-            npx prisma generate
-            npx prisma migrate deploy || npx prisma db push --accept-data-loss || echo "Prisma migrations skipped or failed."
-            npx prisma db seed || echo "Prisma seed skipped or failed."
-            npm run build
-            
-            # Restart backend via PM2
-            pm2 delete dashboard-backend || true
-            PORT=4001 pm2 start dist/server.js --name "dashboard-backend"
-            pm2 save
-            
-            # Print status and logs for diagnostics
-            echo "=== DEPLOYMENT DIAGNOSTICS ==="
-            sleep 2
-            pm2 show dashboard-backend || true
-            pm2 logs dashboard-backend --no-color --limit 30 || true
-            
-            
-            # 3. Configure Nginx for crm.thebytebandits.com & API Proxy (port 4001)
-            echo "=== CONFIGURING NGINX FOR crm.thebytebandits.com ==="
-            sudo python3 - << 'EOF'
-            import glob, re, os
-
-            target_conf = '/etc/nginx/conf.d/crm.thebytebandits.com.conf'
-            found_conf = None
-            for f in glob.glob('/etc/nginx/conf.d/*.conf'):
-                try:
-                    with open(f, 'r') as file:
-                        c = file.read()
-                    if 'crm.thebytebandits.com' in c or 'abc-testig.duckdns.org' in c:
-                        found_conf = f
-                        break
-                except Exception:
-                    pass
-
-            conf_path = found_conf if found_conf else target_conf
-
-            if os.path.exists(conf_path):
-                with open(conf_path, 'r') as file:
-                    content = file.read()
-                
-                # Add crm.thebytebandits.com to server_name if missing
-                if 'crm.thebytebandits.com' not in content:
-                    content = re.sub(r'server_name\s+([^;]+);', r'server_name crm.thebytebandits.com \1;', content)
-                
-                # Ensure /api routes to port 4001
-                if 'location /api' in content:
-                    content = content.replace('http://localhost:4000', 'http://localhost:4001')
-                else:
-                    pattern = r'(location\s+/[\s\S]*?try_files[\s\S]*?})'
-                    api_block = (
-                        "\n\n    location /api {\n"
-                        "        proxy_pass http://localhost:4001;\n"
-                        "        proxy_http_version 1.1;\n"
-                        "        proxy_set_header Upgrade $http_upgrade;\n"
-                        "        proxy_set_header Connection 'upgrade';\n"
-                        "        proxy_set_header Host $host;\n"
-                        "        proxy_set_header X-Real-IP $remote_addr;\n"
-                        "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n"
-                        "        proxy_set_header X-Forwarded-Proto $scheme;\n"
-                        "    }"
-                    )
-                    content = re.sub(pattern, r'\1' + api_block, content, count=1)
-                
-                with open(conf_path, 'w') as file:
-                    file.write(content)
-                print("Updated existing Nginx configuration:", conf_path)
-            else:
-                base_conf = (
-                    "server {\n"
-                    "    listen 80;\n"
-                    "    server_name crm.thebytebandits.com abc-testig.duckdns.org;\n"
-                    "    root /usr/share/nginx/html;\n"
-                    "    index index.html;\n\n"
-                    "    location / {\n"
-                    "        try_files $uri $uri/ /index.html;\n"
-                    "    }\n\n"
-                    "    location /api {\n"
-                    "        proxy_pass http://localhost:4001;\n"
-                    "        proxy_http_version 1.1;\n"
-                    "        proxy_set_header Upgrade $http_upgrade;\n"
-                    "        proxy_set_header Connection 'upgrade';\n"
-                    "        proxy_set_header Host $host;\n"
-                    "        proxy_set_header X-Real-IP $remote_addr;\n"
-                    "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n"
-                    "        proxy_set_header X-Forwarded-Proto $scheme;\n"
-                    "    }\n"
-                    "}\n"
-                )
-                with open(conf_path, 'w') as file:
-                    file.write(base_conf)
-                print("Created base Nginx configuration:", conf_path)
-            EOF
-            
-            # 4. Issue/Renew SSL Certificate via Certbot for crm.thebytebandits.com
-            echo "=== OBTAINING SSL CERTIFICATE FOR crm.thebytebandits.com ==="
-            if ! command -v certbot &> /dev/null; then
-              echo "Installing certbot..."
-              sudo dnf install -y certbot python3-certbot-nginx || sudo yum install -y certbot python3-certbot-nginx || true
-            fi
-
-            # Request/install SSL certificate with automated HTTPS redirect
-            sudo certbot --nginx -d crm.thebytebandits.com --non-interactive --agree-tos -m support@thebytebandits.com --redirect || sudo certbot certonly --webroot -w /usr/share/nginx/html -d crm.thebytebandits.com --non-interactive --agree-tos -m support@thebytebandits.com || true
-
-            # Enable auto-renew timer so SSL never expires
-            sudo systemctl enable --now certbot-renew.timer 2>/dev/null || sudo systemctl enable --now certbot.timer 2>/dev/null || true
-
-            # 5. Restart Nginx
-            sudo nginx -t
-            sudo systemctl restart nginx
-
-            # 6. Test Live HTTPS
-            echo "=== VERIFYING SSL CERTIFICATE ==="
-            curl -Iv https://crm.thebytebandits.com 2>&1 | head -n 25 || true
+            set -e
+            cd /home/ec2-user/app
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull frontend
+            docker compose up -d frontend
+            docker image prune -f

@@ -1,6 +1,6 @@
 import type { AppPagePermission } from '@/types'
-
-export type PageCategory = 'Core' | 'Work' | 'Financial' | 'Admin'
+import { APP_PAGES, type PageCategory, type PagePermissionLevel } from '@/config/pages.config'
+export type { PageCategory, PagePermissionLevel }
 
 export type PageDefinition = {
   key: AppPagePermission
@@ -10,94 +10,25 @@ export type PageDefinition = {
   description: string
 }
 
-export const ALL_PAGES: PageDefinition[] = [
-  {
-    key: 'dashboard',
-    title: 'Financial Dashboard',
-    path: '/',
-    category: 'Core',
-    description: 'Executive financial metrics, spend breakdown, and income summaries',
-  },
-  {
-    key: 'status-board',
-    title: 'Status Board',
-    path: '/work/status-board',
-    category: 'Work',
-    description: 'Kanban board tracking work assessments through workflow stages',
-  },
-  {
-    key: 'impact-board',
-    title: 'Impact Board',
-    path: '/work/impact-board',
-    category: 'Work',
-    description: 'Priority calibration matrix for tasks and critical deliverables',
-  },
-  {
-    key: 'create-assessment',
-    title: 'Create Assessment',
-    path: '/work/create',
-    category: 'Work',
-    description: 'Initiate and assign new work items and assessments',
-  },
-  {
-    key: 'clients',
-    title: 'Clients',
-    path: '/clients',
-    category: 'Financial',
-    description: 'Client directory, active contracts, and company profiles',
-  },
-  {
-    key: 'invoices',
-    title: 'Invoices',
-    path: '/invoices',
-    category: 'Financial',
-    description: 'Billing records, client invoicing, and payment receipts',
-  },
-  {
-    key: 'fixed-costs',
-    title: 'Fixed Costs',
-    path: '/add-fixed-cost',
-    category: 'Financial',
-    description: 'Recurring company expenses and infrastructure costs',
-  },
-  {
-    key: 'operational-costs',
-    title: 'Operational Costs',
-    path: '/add-operational-cost',
-    category: 'Financial',
-    description: 'Day-to-day team expenditures and operational outlays',
-  },
-  {
-    key: 'contact-messages',
-    title: 'Contact Messages',
-    path: '/admin/contacts',
-    category: 'Core',
-    description: 'Inbound inquiries and stakeholder submissions',
-  },
-  {
-    key: 'image-converter',
-    title: 'Image Converter',
-    path: '/image-converter',
-    category: 'Core',
-    description: 'Image format conversion and asset processing utility',
-  },
-  {
-    key: 'user-management',
-    title: 'User Management & Roles',
-    path: '/admin/users',
-    category: 'Admin',
-    description: 'System access control, manager delegation, and team hierarchy',
-  },
-  {
-    key: 'site-management',
-    title: 'Site Credentials',
-    path: '/admin/sites',
-    category: 'Admin',
-    description: 'Secure credential vault for external platform sites',
-  },
-]
+export const getAllPages = (): PageDefinition[] => {
+  return (APP_PAGES || [])
+    .filter((p) => p.key !== 'settings')
+    .map((p) => ({
+      key: p.key,
+      title: p.title,
+      path: p.path,
+      category: p.category,
+      description: p.description,
+    }))
+}
 
-export type PagePermissionLevel = 'none' | 'view' | 'edit'
+export const ALL_PAGES: PageDefinition[] = new Proxy([] as PageDefinition[], {
+  get(_target, prop, receiver) {
+    const pages = getAllPages()
+    const value = Reflect.get(pages, prop, receiver)
+    return typeof value === 'function' ? value.bind(pages) : value
+  },
+})
 
 export const isUserAdmin = (user: { roles?: string[] } | null): boolean => {
   if (!user) return false
@@ -191,17 +122,9 @@ export const getPagePermissionLevel = (
   // Fallback defaults if accessiblePages is not explicitly set on the user record
   if (user.accessiblePages === null || user.accessiblePages === undefined) {
     if (isUserManager(user)) {
-      const defaultManagerPages: AppPagePermission[] = [
-        'dashboard',
-        'status-board',
-        'impact-board',
-        'create-assessment',
-        'clients',
-        'invoices',
-        'fixed-costs',
-        'operational-costs',
-        'image-converter',
-      ]
+      const defaultManagerPages: AppPagePermission[] = APP_PAGES.filter(
+        (p) => p.defaultManagerLevel && p.defaultManagerLevel !== 'none'
+      ).map((p) => p.key)
       return defaultManagerPages.includes(pageKey) ? 'edit' : 'none'
     }
 

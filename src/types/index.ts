@@ -136,6 +136,9 @@ export type AppPagePermission =
   | 'contact-messages'
   | 'user-management'
   | 'site-management'
+  | 'sales-leads'
+  | 'drive'
+  | (string & {})
 
 // --- User Management ---
 export type UserRole =
@@ -255,4 +258,7 @@ export type ApiError = {
 
 // --- Work Assignment ---
 export type { Priority, WorkStatus, UserRole as WorkUserRole, UserAffiliation, Assignee, Milestone, SubTask, WorkItem } from './work'
+
+// --- Sales ---
+export type { LeadStatus, SalesLead, CreateLeadInput, UpdateLeadInput } from './sales'
 
